@@ -1,0 +1,3 @@
+[submodule "third_party/BSRL_Low_Limb_URDF"]
+	path = third_party/BSRL_Low_Limb_URDF
+	url = git@github.com:Co1con/BSRL_Low_Limb_URDF.git
