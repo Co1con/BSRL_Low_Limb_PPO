@@ -2,8 +2,9 @@ import os  # noqa: I001
 
 import isaaclab.sim as sim_utils
 from isaaclab.assets.articulation import ArticulationCfg
+from isaaclab.utils import configclass
 
-from bsrl_low_limb_ppo.assets.delayed_implicit_actuator import DelayedImplicitActuatorCfg
+from BSRL_Low_Limb_PPO.assets.delayed_implicit_actuator import DelayedImplicitActuatorCfg
 # BSRL_Low_Limb_PPO
 
 BSRL_MODEL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "bsrl"))
@@ -15,7 +16,23 @@ BSRL_DEFAULT_ROOT_HEIGHT = 0.8665
 BSRL_ACTUATOR_MIN_DELAY = 0
 BSRL_ACTUATOR_MAX_DELAY = 4
 
-BSRL_CFG = ArticulationCfg(
+BSRL_ACTION_SCALE_MULTIPLIER = {
+    "joint_.*_hip_pitch": 0.25,
+    "joint_.*_hip_roll": 0.25,
+    "joint_.*_hip_yaw": 0.25,
+    "joint_.*_knee_pitch": 0.25,
+    "joint_.*_ankle_roll": 0.25,
+    "joint_.*_ankle_pitch": 0.25,
+}
+
+
+@configclass
+class BSRLArticulationCfg(ArticulationCfg):
+    joint_sdk_names: list[str] = None
+    soft_joint_pos_limit_factor = 0.9
+
+
+BSRL_CFG = BSRLArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
         usd_path=f"{BSRL_MODEL_DIR}/urdf/export/export.usd",
         activate_contact_sensors=True,
@@ -107,3 +124,14 @@ BSRL_CFG = ArticulationCfg(
         "joint_left_ankle_roll",
     ],
 )
+
+
+def _build_action_scale(robot_cfg: ArticulationCfg) -> dict[str, float]:
+    action_scale = {}
+    for actuator_cfg in robot_cfg.actuators.values():
+        for name in actuator_cfg.joint_names_expr:
+            action_scale[name] = BSRL_ACTION_SCALE_MULTIPLIER.get(name, 0.25)
+    return action_scale
+
+
+BSRL_ACTION_SCALE = _build_action_scale(BSRL_CFG)

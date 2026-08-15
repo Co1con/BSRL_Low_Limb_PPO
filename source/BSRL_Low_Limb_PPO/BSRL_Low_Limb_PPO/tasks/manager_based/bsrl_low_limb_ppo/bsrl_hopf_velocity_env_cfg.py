@@ -18,8 +18,8 @@ from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR  # noqa: F401
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 
-from bsrl_low_limb_ppo.assets.bsrl import BSRL_CFG, BSRL_DEFAULT_ROOT_HEIGHT
-from bsrl_low_limb_ppo.tasks.locomotion.bsrl_low_limb_ppo import mdp
+from BSRL_Low_Limb_PPO.assets.bsrl import BSRL_CFG, BSRL_DEFAULT_ROOT_HEIGHT, BSRL_ACTION_SCALE
+from BSRL_Low_Limb_PPO.tasks.manager_based.bsrl_low_limb_ppo import mdp
 
 COBBLESTONE_ROAD_CFG = terrain_gen.TerrainGeneratorCfg(
     size=(8.0, 8.0),
@@ -76,7 +76,7 @@ class RobotSceneCfg(InteractiveSceneCfg):
     robot: ArticulationCfg = BSRL_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
     # 高度/接触力传感器
     height_scanner = RayCasterCfg(
-        prim_path="{ENV_REGEX_NS}/Robot/torso_link",
+        prim_path="{ENV_REGEX_NS}/Robot/base_link",
         offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 20.0)),
         ray_alignment="yaw",
         pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=[1.6, 1.0]),
@@ -144,12 +144,12 @@ class ActionsCfg:
 
 @configclass
 class CommandsCfg:
-    base_velocity = mdp.UniformVelocityCommandCfg(
+    base_velocity = mdp.UniformLevelVelocityCommandCfg(
         asset_name="robot",
         resampling_time_range=(10.0, 10.0),
         rel_standing_envs=0.02,
         rel_heading_envs=1.0,
-        heading_command=True,
+        heading_command=False,
         heading_control_stiffness=0.5,
         debug_vis=True,
         # 一步到位
@@ -170,7 +170,7 @@ class CommandsCfg:
 class RewardsCfg:
     # 速度跟踪
     track_lin_vel_xy = RewTerm(
-        func=mdp.track_lin_vel_xy_yaw_frame_exp,
+        func=mdp.track_lin_vel_xy_exp,
         weight=1.0,
         params={"command_name": "base_velocity", "std": math.sqrt(0.25)},
     )
@@ -193,7 +193,7 @@ class RewardsCfg:
     joint_deviation_hips = RewTerm(
         func=mdp.joint_deviation_l1,
         weight=-1.0,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=[".*_hip_roll_joint", ".*_hip_yaw_joint"])},
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["joint_.*_hip_roll", "joint_.*_hip_yaw"])},
     )
 
     # 机器人属性
@@ -228,7 +228,7 @@ class TerminationsCfg:
     base_contact = DoneTerm(
         func=mdp.illegal_contact,
         params={
-            "sensor_cfg": SceneEntityCfg("contact_forces", body_names="base"),
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names="base_link"),
             "threshold": 1.0
         },
     )
@@ -255,7 +255,7 @@ class EventCfg:
         func=mdp.randomize_rigid_body_mass,
         mode="startup",
         params={
-            "asset_cfg": SceneEntityCfg("robot", body_names="base"),
+            "asset_cfg": SceneEntityCfg("robot", body_names="base_link"),
             "mass_distribution_params": (-5.0, 5.0),
             "operation": "add",
         },
@@ -265,7 +265,7 @@ class EventCfg:
         func=mdp.randomize_rigid_body_com,
         mode="startup",
         params={
-            "asset_cfg": SceneEntityCfg("robot", body_names="base"),
+            "asset_cfg": SceneEntityCfg("robot", body_names="base_link"),
             "com_range": {"x": (-0.05, 0.05), "y": (-0.05, 0.05), "z": (-0.01, 0.01)},
         },
     )
@@ -276,7 +276,7 @@ class EventCfg:
         func=mdp.apply_external_force_torque,
         mode="reset",
         params={
-            "asset_cfg": SceneEntityCfg("robot", body_names="base"),
+            "asset_cfg": SceneEntityCfg("robot", body_names="base_link"),
             "force_range": (0.0, 0.0),
             "torque_range": (-0.0, 0.0),
         },

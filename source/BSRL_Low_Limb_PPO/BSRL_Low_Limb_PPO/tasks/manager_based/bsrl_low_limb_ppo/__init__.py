@@ -27,8 +27,8 @@ gym.register(
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.velocity_env_cfg:RobotEnvCfg",
-        "play_env_cfg_entry_point": f"{__name__}.velocity_env_cfg:RobotPlayEnvCfg",
+        "env_cfg_entry_point": f"{__name__}.bsrl_hopf_velocity_env_cfg:RobotEnvCfg",
+        "play_env_cfg_entry_point": f"{__name__}.bsrl_hopf_velocity_env_cfg:RobotPlayEnvCfg",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:PPORunnerCfg",
     },
 )
