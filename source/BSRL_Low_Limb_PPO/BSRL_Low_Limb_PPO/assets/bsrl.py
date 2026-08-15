@@ -1,8 +1,10 @@
-import os
+import os  # noqa: I001
 
 import isaaclab.sim as sim_utils
 from isaaclab.assets.articulation import ArticulationCfg
-from BSRL_Low_Limb_PPO.assets.delayed_implicit_actuator import DelayedImplicitActuatorCfg
+
+from bsrl_low_limb_ppo.assets.delayed_implicit_actuator import DelayedImplicitActuatorCfg
+# BSRL_Low_Limb_PPO
 
 BSRL_MODEL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "bsrl"))
 
@@ -12,15 +14,6 @@ BSRL_DEFAULT_ROOT_HEIGHT = 0.8665
 # 训练时为每个环境随机采样 0~4 个物理步的执行器命令延迟。
 BSRL_ACTUATOR_MIN_DELAY = 0
 BSRL_ACTUATOR_MAX_DELAY = 4
-
-BSRL_ACTION_SCALE_MULTIPLIER = {
-    "joint_.*_hip_pitch": 0.25,
-    "joint_.*_hip_roll": 0.25,
-    "joint_.*_hip_yaw": 0.25,
-    "joint_.*_knee_pitch": 0.25,
-    "joint_.*_ankle_roll": 0.25,
-    "joint_.*_ankle_pitch": 0.25,
-}
 
 BSRL_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
@@ -114,13 +107,3 @@ BSRL_CFG = ArticulationCfg(
         "joint_left_ankle_roll",
     ],
 )
-
-def _build_action_scale(robot_cfg: ArticulationCfg) -> dict[str, float]:
-    action_scale = {}
-    for actuator_cfg in robot_cfg.actuators.values():
-        for name in actuator_cfg.joint_names_expr:
-            action_scale[name] = BSRL_ACTION_SCALE_MULTIPLIER.get(name, 0.25)
-    return action_scale
-
-
-BSRL_ACTION_SCALE = _build_action_scale(BSRL_CFG)
