@@ -158,17 +158,17 @@ class CommandsCfg:
         # ),
         # 课程学习
         ranges=mdp.UniformLevelVelocityCommandCfg.Ranges(
-            lin_vel_x=(-0.1, 0.1), lin_vel_y=(-0.1, 0.1), ang_vel_z=(-0.1, 0.1)
+            lin_vel_x=(-0.5, 0.5), lin_vel_y=(-0.2, 0.2), ang_vel_z=(-0.5, 0.5)
         ),
         limit_ranges=mdp.UniformLevelVelocityCommandCfg.Ranges(
-            lin_vel_x=(-0.3, 1.2), lin_vel_y=(-0.5, 0.5), ang_vel_z=(-0.5, 0.5)
+            lin_vel_x=(-0.5, 1.2), lin_vel_y=(-0.5, 0.5), ang_vel_z=(-0.5, 0.5)
         ),
     )
 
 
 @configclass
 class RewardsCfg:
-    # 速度跟踪
+    # 任务核心奖励
     track_lin_vel_xy = RewTerm(
         func=mdp.track_lin_vel_xy_exp,
         weight=1.0,
@@ -179,28 +179,33 @@ class RewardsCfg:
         weight=0.5,
         params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
     )
-    alive = RewTerm(func=mdp.is_alive, weight=0.15)
 
-    # 基本运动稳定性
-    base_linear_velocity = RewTerm(func=mdp.lin_vel_z_l2, weight=-2.0)
-    base_angular_velocity = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
-    joint_vel = RewTerm(func=mdp.joint_vel_l2, weight=-0.001)
+    # 生存与终止惩罚
+    alive = RewTerm(func=mdp.is_alive, weight=0.2)
+
+    # 姿态与稳定性惩罚
+    base_linear_velocity = RewTerm(func=mdp.lin_vel_z_l2, weight=-1.5)
+    base_angular_velocity = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.01)
+    flat_orientation_l2 = RewTerm(func=mdp.flat_orientation_l2, weight=-1.0)
+
+    # 关节行为与能耗惩罚
+    joint_vel = RewTerm(func=mdp.joint_vel_l2, weight=-1e-4)
     joint_acc = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-7)
-    action_rate = RewTerm(func=mdp.action_rate_l2, weight=-0.05)
-    dof_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=-5.0)
+    dof_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=-1.0)
     energy = RewTerm(func=mdp.energy, weight=-2e-5)
-
     joint_deviation_hips = RewTerm(
         func=mdp.joint_deviation_l1,
         weight=-1.0,
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=["joint_.*_hip_roll", "joint_.*_hip_yaw"])},
     )
 
-    # 机器人属性
-    flat_orientation_l2 = RewTerm(func=mdp.flat_orientation_l2, weight=-5.0)
+    # 动作平滑性惩罚
+    action_rate = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
+
+    # 机体高度惩罚
     base_height = RewTerm(
         func=mdp.base_height_l2,
-        weight=-10,
+        weight=-1.0,
         params={
             "target_height": BSRL_DEFAULT_ROOT_HEIGHT,
             "asset_cfg": SceneEntityCfg("robot"),
@@ -208,12 +213,28 @@ class RewardsCfg:
         },
     )
 
-    # 足端
-
-    # 其它
+    # 接触与地面交互惩罚
+    feet_slide = RewTerm(
+        func=mdp.feet_slide,
+        weight=-0.2,
+        params={
+            "asset_cfg": SceneEntityCfg("robot", body_names=".*ankle_roll"),
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*ankle_roll"),
+        },
+    )
+    feet_clearance = RewTerm(
+        func=mdp.foot_clearance_reward,
+        weight=1.0,
+        params={
+            "std": 0.05,
+            "tanh_mult": 2.0,
+            "target_height": 0.1,
+            "asset_cfg": SceneEntityCfg("robot", body_names=".*ankle_roll.*"),
+        },
+    )
     undesired_contacts = RewTerm(
         func=mdp.undesired_contacts,
-        weight=-1,
+        weight=-0.0,
         params={
             "threshold": 1,
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=["(?!.*ankle.*).*"]),
@@ -232,7 +253,12 @@ class TerminationsCfg:
             "threshold": 1.0
         },
     )
-    bad_orientation = DoneTerm(func=mdp.bad_orientation, params={"limit_angle": math.radians(45.0)})
+    bad_orientation = DoneTerm(
+        func=mdp.bad_orientation, 
+        params={
+            "limit_angle": math.radians(60.0),
+        },
+    )
 
 
 @configclass
@@ -365,6 +391,8 @@ class RobotPlayEnvCfg(RobotEnvCfg):
     def __post_init__(self):
         super().__post_init__()
         self.scene.num_envs = 32
-        self.scene.terrain.terrain_generator.num_rows = 2
-        self.scene.terrain.terrain_generator.num_cols = 10
         self.commands.base_velocity.ranges = self.commands.base_velocity.limit_ranges
+
+        if self.scene.terrain.terrain_generator is not None:
+            self.scene.terrain.terrain_generator.num_rows = 2
+            self.scene.terrain.terrain_generator.num_cols = 10
