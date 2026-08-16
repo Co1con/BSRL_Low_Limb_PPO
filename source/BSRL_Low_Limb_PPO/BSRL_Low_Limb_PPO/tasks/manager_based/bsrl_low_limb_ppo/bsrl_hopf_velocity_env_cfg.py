@@ -105,7 +105,7 @@ class ObservationsCfg:
         joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel, scale=0.05, noise=Unoise(n_min=-1.5, n_max=1.5))
         joint_effort = ObsTerm(func=mdp.joint_effort, scale=0.01)
         last_action = ObsTerm(func=mdp.last_action)
-        # gait_phase = ObsTerm(func=mdp.gait_phase, params={"period": 0.8})
+        gait_phase = ObsTerm(func=mdp.gait_phase, params={"period": 0.8})
 
         def __post_init__(self):
             # self.history_length = 5
@@ -129,7 +129,7 @@ class ObservationsCfg:
             params={"sensor_cfg": SceneEntityCfg("height_scanner")},
             clip=(-1.0, 5.0),
         )
-        # gait_phase = ObsTerm(func=mdp.gait_phase, params={"period": 0.6})
+        gait_phase = ObsTerm(func=mdp.gait_phase, params={"period": 0.8})
 
         # def __post_init__(self):
         #     self.history_length = 5
@@ -147,8 +147,8 @@ class CommandsCfg:
     base_velocity = mdp.UniformLevelVelocityCommandCfg(
         asset_name="robot",
         resampling_time_range=(10.0, 10.0),
-        rel_standing_envs=0.4,
-        rel_heading_envs=0.0,
+        rel_standing_envs=0.02,
+        rel_heading_envs=1.0,
         heading_command=False,
         heading_control_stiffness=0.5,
         debug_vis=True,
@@ -161,14 +161,14 @@ class CommandsCfg:
             lin_vel_x=(-0.1, 0.1), lin_vel_y=(-0.1, 0.1), ang_vel_z=(-0.1, 0.1)
         ),
         limit_ranges=mdp.UniformLevelVelocityCommandCfg.Ranges(
-            lin_vel_x=(-0.5, 1.2), lin_vel_y=(-0.1, 0.1), ang_vel_z=(-0.1, 0.1)
+            lin_vel_x=(-0.5, 1.0), lin_vel_y=(-0.3, 0.3), ang_vel_z=(-0.2, 0.2)
         ),
     )
 
 
 @configclass
 class RewardsCfg:
-    # 任务核心奖励
+    # Task
     track_lin_vel_xy = RewTerm(
         func=mdp.track_lin_vel_xy_exp,
         weight=1.0,
@@ -180,32 +180,14 @@ class RewardsCfg:
         params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
     )
 
-    # 生存与终止惩罚
-    alive = RewTerm(func=mdp.is_alive, weight=0.2)
-
-    # 姿态与稳定性惩罚
-    base_linear_velocity = RewTerm(func=mdp.lin_vel_z_l2, weight=-1.5)
-    base_angular_velocity = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.01)
-    flat_orientation_l2 = RewTerm(func=mdp.flat_orientation_l2, weight=-1.0)
-
-    # 关节行为与能耗惩罚
-    joint_vel = RewTerm(func=mdp.joint_vel_l2, weight=-1e-4)
-    joint_acc = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-7)
-    dof_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=-1.0)
-    energy = RewTerm(func=mdp.energy, weight=-2e-5)
-    joint_deviation_hips = RewTerm(
-        func=mdp.joint_deviation_l1,
-        weight=-1.0,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["joint_.*_hip_roll", "joint_.*_hip_yaw"])},
-    )
-
-    # 动作平滑性惩罚
-    action_rate = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
-
-    # 机体高度惩罚
+    # Base
+    alive = RewTerm(func=mdp.is_alive, weight=0.15)
+    base_linear_velocity = RewTerm(func=mdp.lin_vel_z_l2, weight=-2.0)
+    base_angular_velocity = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
+    flat_orientation_l2 = RewTerm(func=mdp.flat_orientation_l2, weight=-5.0)
     base_height = RewTerm(
         func=mdp.base_height_l2,
-        weight=-1.0,
+        weight=-10.0,
         params={
             "target_height": BSRL_DEFAULT_ROOT_HEIGHT,
             "asset_cfg": SceneEntityCfg("robot"),
@@ -213,7 +195,32 @@ class RewardsCfg:
         },
     )
 
-    # 接触与地面交互惩罚
+    # Joints
+    joint_vel = RewTerm(func=mdp.joint_vel_l2, weight=-0.001)
+    joint_acc = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-7)
+    action_rate = RewTerm(func=mdp.action_rate_l2, weight=-0.05)
+    dof_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=-5.0)
+    energy = RewTerm(func=mdp.energy, weight=-2e-5)
+    joint_deviation_hips = RewTerm(
+        func=mdp.joint_deviation_l1,
+        weight=-1.0,
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["joint_.*_hip_roll", "joint_.*_hip_yaw"])},
+    )
+
+    # Feet
+    feet_gait = RewTerm(
+        func=mdp.feet_gait,
+        weight=0.5,
+        params={
+            "period": 0.8,
+            "offset": [0.0, 0.5],
+            "sensor_cfg": SceneEntityCfg(
+                "contact_forces", body_names=["link_left_ankle_roll", "link_right_ankle_roll"]
+            ),
+            "threshold": 0.55,
+            "command_name": "base_velocity",
+        },
+    )
     feet_slide = RewTerm(
         func=mdp.feet_slide,
         weight=-0.2,
@@ -224,10 +231,8 @@ class RewardsCfg:
     )
     feet_clearance = RewTerm(
         func=mdp.foot_clearance_reward,
-        weight=0.4,
+        weight=1.0,
         params={
-            "command_name": "base_velocity",
-            "command_threshold": 0.2,
             "std": 0.05,
             "tanh_mult": 2.0,
             "target_height": 0.1,
@@ -236,7 +241,7 @@ class RewardsCfg:
     )
     undesired_contacts = RewTerm(
         func=mdp.undesired_contacts,
-        weight=-0.5,
+        weight=-1.0,
         params={
             "threshold": 1,
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=["(?!.*ankle.*).*"]),
