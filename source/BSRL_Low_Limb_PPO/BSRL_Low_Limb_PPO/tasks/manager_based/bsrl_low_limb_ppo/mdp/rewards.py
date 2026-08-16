@@ -58,11 +58,16 @@ def foot_clearance_reward(
     asset_cfg: SceneEntityCfg,
     target_height: float,
     std: float,
-    tanh_mult: float
+    tanh_mult: float,
+    command_name: str,
+    command_threshold: float,
 ) -> torch.Tensor:
-    """Reward the swinging feet for clearing a specified height off the ground"""
+    """Reward foot clearance only when the commanded speed is large enough."""
     asset: RigidObject = env.scene[asset_cfg.name]
+    command = env.command_manager.get_command(command_name)
+    moving = torch.norm(command[:, :2], dim=1) > command_threshold
+
     foot_z_target_error = torch.square(asset.data.body_pos_w[:, asset_cfg.body_ids, 2] - target_height)
     foot_velocity_tanh = torch.tanh(tanh_mult * torch.norm(asset.data.body_lin_vel_w[:, asset_cfg.body_ids, :2], dim=2))
     reward = foot_z_target_error * foot_velocity_tanh
-    return torch.exp(-torch.sum(reward, dim=1) / std)
+    return torch.exp(-torch.sum(reward, dim=1) / std) * moving.float()

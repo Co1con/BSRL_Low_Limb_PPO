@@ -147,8 +147,8 @@ class CommandsCfg:
     base_velocity = mdp.UniformLevelVelocityCommandCfg(
         asset_name="robot",
         resampling_time_range=(10.0, 10.0),
-        rel_standing_envs=0.02,
-        rel_heading_envs=1.0,
+        rel_standing_envs=0.4,
+        rel_heading_envs=0.0,
         heading_command=False,
         heading_control_stiffness=0.5,
         debug_vis=True,
@@ -158,10 +158,10 @@ class CommandsCfg:
         # ),
         # 课程学习
         ranges=mdp.UniformLevelVelocityCommandCfg.Ranges(
-            lin_vel_x=(-0.5, 0.5), lin_vel_y=(-0.2, 0.2), ang_vel_z=(-0.5, 0.5)
+            lin_vel_x=(-0.1, 0.1), lin_vel_y=(-0.1, 0.1), ang_vel_z=(-0.1, 0.1)
         ),
         limit_ranges=mdp.UniformLevelVelocityCommandCfg.Ranges(
-            lin_vel_x=(-0.5, 1.2), lin_vel_y=(-0.5, 0.5), ang_vel_z=(-0.5, 0.5)
+            lin_vel_x=(-0.5, 1.2), lin_vel_y=(-0.1, 0.1), ang_vel_z=(-0.1, 0.1)
         ),
     )
 
@@ -171,12 +171,12 @@ class RewardsCfg:
     # 任务核心奖励
     track_lin_vel_xy = RewTerm(
         func=mdp.track_lin_vel_xy_exp,
-        weight=0.0,
+        weight=1.0,
         params={"command_name": "base_velocity", "std": math.sqrt(0.25)},
     )
     track_ang_vel_z = RewTerm(
         func=mdp.track_ang_vel_z_exp,
-        weight=0.0,
+        weight=0.5,
         params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
     )
 
@@ -226,6 +226,8 @@ class RewardsCfg:
         func=mdp.foot_clearance_reward,
         weight=0.4,
         params={
+            "command_name": "base_velocity",
+            "command_threshold": 0.2,
             "std": 0.05,
             "tanh_mult": 2.0,
             "target_height": 0.1,
@@ -256,7 +258,7 @@ class TerminationsCfg:
     bad_orientation = DoneTerm(
         func=mdp.bad_orientation, 
         params={
-            "limit_angle": math.radians(90.0),
+            "limit_angle": math.radians(60.0),
         },
     )
 
