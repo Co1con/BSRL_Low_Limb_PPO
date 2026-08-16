@@ -159,7 +159,7 @@ class CommandsCfg:
             lin_vel_x=(0.3, 0.5), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.0, 0.0)
         ),
         limit_ranges=mdp.UniformLevelVelocityCommandCfg.Ranges(
-            lin_vel_x=(-0.2, 1.0), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.0, 0.0)
+            lin_vel_x=(0.3, 1.0), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.0, 0.0)
         ),
     )
 
@@ -219,6 +219,16 @@ class RewardsCfg:
             "command_name": "base_velocity",
         },
     )
+    feet_double_support = RewTerm(
+        func=mdp.long_double_support_penalty,
+        weight=-0.5,
+        params={
+            "command_name": "base_velocity",
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=BSRL_FOOT_NAME),
+            "command_threshold": 0.1,
+            "allowed_time": 0.1
+        },
+    )
     feet_slide = RewTerm(
         func=mdp.feet_slide,
         weight=-0.2,
@@ -238,7 +248,7 @@ class RewardsCfg:
     )
     feet_clearance = RewTerm(
         func=mdp.foot_clearance_reward,
-        weight=1.0,
+        weight=0.0,
         params={
             "std": 0.05,
             "tanh_mult": 2.0,

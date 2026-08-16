@@ -236,3 +236,22 @@ def feet_air_time_positive_biped(env, command_name: str, threshold: float, senso
     # no reward for zero command
     reward *= torch.norm(env.command_manager.get_command(command_name)[:, :2], dim=1) > 0.1
     return reward
+
+
+def long_double_support_penalty(
+    env,
+    command_name: str,
+    sensor_cfg: SceneEntityCfg,
+    command_threshold: float = 0.1,
+    allowed_time: float = 0.15,
+) -> torch.Tensor:
+    contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
+
+    contact_time = contact_sensor.data.current_contact_time[:, sensor_cfg.body_ids]
+    double_support_time = torch.min(contact_time[:, 0], contact_time[:, 1])
+
+    command = env.command_manager.get_command(command_name)
+    is_moving_cmd = torch.norm(command[:, :2], dim=1) > command_threshold
+
+    penalty = torch.clamp(double_support_time - allowed_time, min=0.0)
+    return penalty * is_moving_cmd.float()
