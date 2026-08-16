@@ -422,7 +422,7 @@ class RobotEnvCfg(ManagerBasedRLEnvCfg):
 class RobotPlayEnvCfg(RobotEnvCfg):
     def __post_init__(self):
         super().__post_init__()
-        self.scene.num_envs = 32
+        self.scene.num_envs = 8
         self.commands.base_velocity.ranges = self.commands.base_velocity.limit_ranges
 
         if self.scene.terrain.terrain_generator is not None:
