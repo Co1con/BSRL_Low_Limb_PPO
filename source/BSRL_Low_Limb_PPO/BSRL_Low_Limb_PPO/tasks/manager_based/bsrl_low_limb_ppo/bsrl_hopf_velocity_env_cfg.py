@@ -18,7 +18,7 @@ from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR  # noqa: F401
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 
-from BSRL_Low_Limb_PPO.assets.bsrl import BSRL_CFG, BSRL_DEFAULT_ROOT_HEIGHT, BSRL_ACTION_SCALE
+from BSRL_Low_Limb_PPO.assets.bsrl import BSRL_CFG, BSRL_DEFAULT_ROOT_HEIGHT
 from BSRL_Low_Limb_PPO.tasks.manager_based.bsrl_low_limb_ppo import mdp
 
 COBBLESTONE_ROAD_CFG = terrain_gen.TerrainGeneratorCfg(
@@ -171,12 +171,12 @@ class RewardsCfg:
     # 任务核心奖励
     track_lin_vel_xy = RewTerm(
         func=mdp.track_lin_vel_xy_exp,
-        weight=1.0,
+        weight=0.0,
         params={"command_name": "base_velocity", "std": math.sqrt(0.25)},
     )
     track_ang_vel_z = RewTerm(
         func=mdp.track_ang_vel_z_exp,
-        weight=0.5,
+        weight=0.0,
         params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
     )
 
@@ -224,7 +224,7 @@ class RewardsCfg:
     )
     feet_clearance = RewTerm(
         func=mdp.foot_clearance_reward,
-        weight=1.0,
+        weight=0.4,
         params={
             "std": 0.05,
             "tanh_mult": 2.0,
@@ -234,7 +234,7 @@ class RewardsCfg:
     )
     undesired_contacts = RewTerm(
         func=mdp.undesired_contacts,
-        weight=-0.0,
+        weight=-0.5,
         params={
             "threshold": 1,
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=["(?!.*ankle.*).*"]),
@@ -245,7 +245,7 @@ class RewardsCfg:
 @configclass
 class TerminationsCfg:
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
-    base_height = DoneTerm(func=mdp.root_height_below_minimum, params={"minimum_height": 0.2})
+    base_height = DoneTerm(func=mdp.root_height_below_minimum, params={"minimum_height": 0.1})
     base_contact = DoneTerm(
         func=mdp.illegal_contact,
         params={
@@ -256,7 +256,7 @@ class TerminationsCfg:
     bad_orientation = DoneTerm(
         func=mdp.bad_orientation, 
         params={
-            "limit_angle": math.radians(60.0),
+            "limit_angle": math.radians(90.0),
         },
     )
 
@@ -312,7 +312,7 @@ class EventCfg:
         func=mdp.reset_root_state_uniform,
         mode="reset",
         params={
-            "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "yaw": (0.0, 0.0)},
+            "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "yaw": (-3.14, 3.14)},
             "velocity_range": {
                 "x": (0.0, 0.0),
                 "y": (0.0, 0.0),
@@ -321,8 +321,6 @@ class EventCfg:
                 "pitch": (0.0, 0.0),
                 "yaw": (0.0, 0.0),
             },
-
-            # "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "yaw": (-3.14, 3.14)},
             # "velocity_range": {
                 # "x": (-0.5, 0.5),
                 # "y": (-0.5, 0.5),
@@ -334,14 +332,14 @@ class EventCfg:
         },
     )
     # 随机大小
-    # reset_robot_joints = EventTerm(
-    #     func=mdp.reset_joints_by_scale,
-    #     mode="reset",
-    #     params={
-    #         "position_range": (0.5, 1.5),
-    #         "velocity_range": (0.0, 0.0),
-    #     },
-    # )
+    reset_robot_joints = EventTerm(
+        func=mdp.reset_joints_by_scale,
+        mode="reset",
+        params={
+            "position_range": (1.0, 1.0),
+            "velocity_range": (-0.0, 0.0),
+        },
+    )
     ## interval
     # 随机施加速度以推动机器人
     # push_robot = EventTerm(

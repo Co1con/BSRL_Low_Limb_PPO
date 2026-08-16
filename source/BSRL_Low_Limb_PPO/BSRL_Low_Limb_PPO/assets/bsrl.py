@@ -1,6 +1,7 @@
 import os  # noqa: I001
 
 import isaaclab.sim as sim_utils
+from isaaclab.actuators import IdealPDActuatorCfg, ImplicitActuatorCfg, DCMotorCfg
 from isaaclab.assets.articulation import ArticulationCfg
 from isaaclab.utils import configclass
 
@@ -10,7 +11,8 @@ from BSRL_Low_Limb_PPO.assets.delayed_implicit_actuator import DelayedImplicitAc
 BSRL_MODEL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "bsrl"))
 
 # 机器人默认高度
-BSRL_DEFAULT_ROOT_HEIGHT = 0.8665
+BSRL_DEFAULT_ROOT_HEIGHT = 0.8635
+# BSRL_DEFAULT_ROOT_HEIGHT = 0.8665
 
 # 训练时为每个环境随机采样 0~4 个物理步的执行器命令延迟。
 BSRL_ACTUATOR_MIN_DELAY = 0
@@ -56,10 +58,17 @@ BSRL_CFG = BSRLArticulationCfg(
         joint_pos={
             "joint_.*_hip_yaw": 0.0,
             "joint_.*_hip_roll": 0.0,
-            "joint_.*_hip_pitch": -0.2,
+            "joint_.*_hip_pitch": -0.1,
             "joint_.*_knee_pitch": 0.4,
-            "joint_.*_ankle_pitch": -0.2,
+            "joint_.*_ankle_pitch": -0.3,
             "joint_.*_ankle_roll": 0.0,
+
+            # "joint_.*_hip_yaw": 0.0,
+            # "joint_.*_hip_roll": 0.0,
+            # "joint_.*_hip_pitch": -0.2,
+            # "joint_.*_knee_pitch": 0.4,
+            # "joint_.*_ankle_pitch": -0.2,
+            # "joint_.*_ankle_roll": 0.0,
         },
         joint_vel={".*": 0.0},
     ),
@@ -77,16 +86,16 @@ BSRL_CFG = BSRLArticulationCfg(
             velocity_limit_sim=10.0,
             armature=0.01,
             stiffness={
-                "joint_.*_hip_pitch": 100,
-                "joint_.*_hip_roll": 100,
-                "joint_.*_hip_yaw": 100,
-                "joint_.*_knee_pitch": 150,
+                "joint_.*_hip_pitch": 200,
+                "joint_.*_hip_roll": 180,
+                "joint_.*_hip_yaw": 80,
+                "joint_.*_knee_pitch": 280,
             },
             damping={
-                "joint_.*_hip_pitch": 2,
-                "joint_.*_hip_roll": 2,
-                "joint_.*_hip_yaw": 2,
-                "joint_.*_knee_pitch": 4,
+                "joint_.*_hip_pitch": 12,
+                "joint_.*_hip_roll": 10,
+                "joint_.*_hip_yaw": 5,
+                "joint_.*_knee_pitch": 18,
             },
         ),
         "feet": DelayedImplicitActuatorCfg(
@@ -100,14 +109,39 @@ BSRL_CFG = BSRLArticulationCfg(
             velocity_limit_sim=10.0,
             armature=0.01,
             stiffness={
-                "joint_.*_ankle_roll": 40,
-                "joint_.*_ankle_pitch": 40,
+                "joint_.*_ankle_roll": 80,
+                "joint_.*_ankle_pitch": 120,
             },
             damping={
-                "joint_.*_ankle_roll": 2,
-                "joint_.*_ankle_pitch": 2,
+                "joint_.*_ankle_roll": 6,
+                "joint_.*_ankle_pitch": 8,
             },
         ),
+        # 原生Implicit actuator写法
+        # "hip_motors": ImplicitActuatorCfg(
+        #     joint_names_expr=["joint_.*_hip_.*"],
+        #     effort_limit_sim=1000.0,
+        #     velocity_limit_sim=10.0,
+        #     stiffness=100.0,
+        #     damping=2.0,
+        #     armature=0.01,
+        # ),
+        # "knee_motors": ImplicitActuatorCfg(
+        #     joint_names_expr=["joint_.*_knee_pitch"],
+        #     effort_limit_sim=1000.0,
+        #     velocity_limit_sim=10.0,
+        #     stiffness=150.0,
+        #     damping=4.0,
+        #     armature=0.01,
+        # ),
+        # "ankle_motors": ImplicitActuatorCfg(
+        #     joint_names_expr=["joint_.*_ankle_.*"],
+        #     effort_limit_sim=1000.0,
+        #     velocity_limit_sim=10.0,
+        #     stiffness=40.0,
+        #     damping=2.0,
+        #     armature=0.01,
+        # ),
     },
     joint_sdk_names=[
         "joint_right_hip_yaw",
@@ -124,14 +158,3 @@ BSRL_CFG = BSRLArticulationCfg(
         "joint_left_ankle_roll",
     ],
 )
-
-
-def _build_action_scale(robot_cfg: ArticulationCfg) -> dict[str, float]:
-    action_scale = {}
-    for actuator_cfg in robot_cfg.actuators.values():
-        for name in actuator_cfg.joint_names_expr:
-            action_scale[name] = BSRL_ACTION_SCALE_MULTIPLIER.get(name, 0.25)
-    return action_scale
-
-
-BSRL_ACTION_SCALE = _build_action_scale(BSRL_CFG)
