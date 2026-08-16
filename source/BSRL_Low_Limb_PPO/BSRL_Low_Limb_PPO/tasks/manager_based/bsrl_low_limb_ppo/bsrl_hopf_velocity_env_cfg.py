@@ -37,6 +37,9 @@ COBBLESTONE_ROAD_CFG = terrain_gen.TerrainGeneratorCfg(
 )
 
 
+BSRL_FOOT_NAME = ["link_left_ankle_roll", "link_right_ankle_roll"]
+
+
 @configclass
 class RobotSceneCfg(InteractiveSceneCfg):
     # 超平坦地形
@@ -152,16 +155,11 @@ class CommandsCfg:
         heading_command=False,
         heading_control_stiffness=0.5,
         debug_vis=True,
-        # 一步到位
-        # ranges=mdp.UniformVelocityCommandCfg.Ranges(
-        #     lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-1.0, 1.0)
-        # ),
-        # 课程学习
         ranges=mdp.UniformLevelVelocityCommandCfg.Ranges(
-            lin_vel_x=(-0.1, 0.1), lin_vel_y=(-0.1, 0.1), ang_vel_z=(-0.1, 0.1)
+            lin_vel_x=(0.3, 0.5), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.0, 0.0)
         ),
         limit_ranges=mdp.UniformLevelVelocityCommandCfg.Ranges(
-            lin_vel_x=(-0.5, 1.0), lin_vel_y=(-0.3, 0.3), ang_vel_z=(-0.2, 0.2)
+            lin_vel_x=(-0.2, 1.0), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.0, 0.0)
         ),
     )
 
@@ -215,7 +213,7 @@ class RewardsCfg:
             "period": 0.8,
             "offset": [0.0, 0.5],
             "sensor_cfg": SceneEntityCfg(
-                "contact_forces", body_names=["link_left_ankle_roll", "link_right_ankle_roll"]
+                "contact_forces", body_names=BSRL_FOOT_NAME
             ),
             "threshold": 0.55,
             "command_name": "base_velocity",
@@ -225,8 +223,17 @@ class RewardsCfg:
         func=mdp.feet_slide,
         weight=-0.2,
         params={
-            "asset_cfg": SceneEntityCfg("robot", body_names=".*ankle_roll"),
-            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*ankle_roll"),
+            "asset_cfg": SceneEntityCfg("robot", body_names=BSRL_FOOT_NAME),
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=BSRL_FOOT_NAME),
+        },
+    )
+    feet_air_time = RewTerm(
+        func=mdp.feet_air_time_positive_biped,
+        weight=1.0,
+        params={            
+            "command_name": "base_velocity",
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=BSRL_FOOT_NAME),
+            "threshold": 0.5,
         },
     )
     feet_clearance = RewTerm(
@@ -236,7 +243,7 @@ class RewardsCfg:
             "std": 0.05,
             "tanh_mult": 2.0,
             "target_height": 0.1,
-            "asset_cfg": SceneEntityCfg("robot", body_names=".*ankle_roll.*"),
+            "asset_cfg": SceneEntityCfg("robot", body_names=BSRL_FOOT_NAME),
         },
     )
     undesired_contacts = RewTerm(
@@ -244,7 +251,7 @@ class RewardsCfg:
         weight=-1.0,
         params={
             "threshold": 1,
-            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=["(?!.*ankle.*).*"]),
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=["^(?!.*link_.*_ankle_roll).*"]),
         },
     )
 
