@@ -30,7 +30,9 @@ class HopfObservationsCfg:
         joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel, scale=0.05, noise=Unoise(n_min=-1.5, n_max=1.5))
         joint_effort = ObsTerm(func=mdp.joint_effort, scale=0.01)
         last_action = ObsTerm(func=mdp.last_action)
-        gait_phase = ObsTerm(func=mdp.gait_phase, params={"period": 0.8})
+
+        hopf_reference = ObsTerm(func=mdp.hopf_reference, params={"command_name": "base_velocity"})
+        hopf_state = ObsTerm(func=mdp.hopf_state, params={"command_name": "base_velocity"})
 
         def __post_init__(self):
             # self.history_length = 5
@@ -54,7 +56,9 @@ class HopfObservationsCfg:
             params={"sensor_cfg": SceneEntityCfg("height_scanner")},
             clip=(-1.0, 5.0),
         )
-        gait_phase = ObsTerm(func=mdp.gait_phase, params={"period": 0.8})
+
+        hopf_reference = ObsTerm(func=mdp.hopf_reference, params={"command_name": "base_velocity"})
+        hopf_state = ObsTerm(func=mdp.hopf_state, params={"command_name": "base_velocity"})
 
         # def __post_init__(self):
         #     self.history_length = 5
@@ -73,10 +77,10 @@ class HopfCommandsCfg:
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.UniformLevelVelocityCommandCfg.Ranges(
-            lin_vel_x=(0.3, 0.5), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.0, 0.0)
+            lin_vel_x=(0.0, 0.0), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.0, 0.0)
         ),
         limit_ranges=mdp.UniformLevelVelocityCommandCfg.Ranges(
-            lin_vel_x=(0.3, 1.0), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.0, 0.0)
+            lin_vel_x=(0.0, 1.0), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.0, 0.0)
         ),
     )
 
@@ -120,6 +124,23 @@ class HopfRewardsCfg:
         func=mdp.joint_deviation_l1,
         weight=-1.0,
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=["joint_.*_hip_roll", "joint_.*_hip_yaw"])},
+    )
+    hopf_joint_tracking = RewTerm(
+        func=mdp.hopf_joint_tracking,
+        weight=0.5,
+        params={
+            "asset_cfg": SceneEntityCfg(
+                "robot",
+                joint_names=[
+                    "joint_left_hip_pitch",
+                    "joint_left_knee_pitch",
+                    "joint_right_hip_pitch",
+                    "joint_right_knee_pitch",
+                ],
+            ),
+            "command_name": "base_velocity",
+            "std": math.sqrt(0.09),
+        },
     )
 
     # Feet

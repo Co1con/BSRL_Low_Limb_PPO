@@ -18,12 +18,14 @@ from isaaclab.managers import SceneEntityCfg
 from isaaclab.sensors import ContactSensor
 from isaaclab.utils.math import wrap_to_pi
 
+from .observations import hopf_reference
+
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
 
 
 def joint_pos_target_l2(
-    env: ManagerBasedRLEnv, 
+    env: ManagerBasedRLEnv,
     asset_cfg: SceneEntityCfg,
     target: float) -> torch.Tensor:
     """Penalize joint position deviation from a target value."""
@@ -36,7 +38,7 @@ def joint_pos_target_l2(
 
 
 def energy(
-    env: ManagerBasedRLEnv, 
+    env: ManagerBasedRLEnv,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     """Penalize the energy used by the robot's joints."""
     asset: Articulation = env.scene[asset_cfg.name]
@@ -255,3 +257,16 @@ def long_double_support_penalty(
 
     penalty = torch.clamp(double_support_time - allowed_time, min=0.0)
     return penalty * is_moving_cmd.float()
+
+
+def hopf_joint_tracking(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg,
+    command_name: str = "base_velocity",
+    std: float = 0.25,
+) -> torch.Tensor:
+    """奖励 hip/knee pitch 四个关节跟随 Hopf 参考轨迹。"""
+    asset: Articulation = env.scene[asset_cfg.name]
+    q_actual = wrap_to_pi(asset.data.joint_pos[:, asset_cfg.joint_ids])
+    q_hopf = hopf_reference(env, command_name)
+    return torch.exp(-torch.mean(torch.square(q_actual - q_hopf), dim=1) / std)
