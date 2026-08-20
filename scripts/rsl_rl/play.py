@@ -44,7 +44,7 @@ parser.add_argument("--log_obs_trajectories", action="store_true", default=False
 parser.add_argument("--log_obs_path", type=str, default=None, help="CSV path for logged observation trajectories.")
 parser.add_argument("--log_obs_env_id", type=int, default=0, help="Environment id to log.")
 parser.add_argument("--log_obs_start", type=int, default=57, help="Start index of observation slice to log.")
-parser.add_argument("--log_obs_dim", type=int, default=4, help="Number of observation dimensions to log.")
+parser.add_argument("--log_obs_dim", type=int, default=8, help="Number of observation dimensions to log.")
 # append RSL-RL cli arguments
 cli_args.add_rsl_rl_args(parser)
 # append AppLauncher cli args
@@ -89,6 +89,31 @@ from isaaclab_tasks.utils import get_checkpoint_path
 from isaaclab_tasks.utils.hydra import hydra_task_config
 
 import BSRL_Low_Limb_PPO.tasks  # noqa: F401
+
+
+def _get_action_term(action_manager, term_name: str):
+    if hasattr(action_manager, "get_term"):
+        return action_manager.get_term(term_name)
+    if hasattr(action_manager, "_terms"):
+        return action_manager._terms[term_name]
+    raise AttributeError("Cannot access action manager terms.")
+
+
+def _get_processed_actions(action_term) -> torch.Tensor:
+    if hasattr(action_term, "processed_actions"):
+        return action_term.processed_actions
+    if hasattr(action_term, "_processed_actions"):
+        return action_term._processed_actions
+    raise AttributeError("Cannot access processed actions from action term.")
+
+
+def _get_joint_ids(action_term, joint_names: list[str]) -> list[int]:
+    action_joint_names = getattr(action_term, "_joint_names", None)
+    if action_joint_names is None:
+        action_joint_names = getattr(action_term, "joint_names", None)
+    if action_joint_names is None:
+        raise AttributeError("Cannot access joint names from joint_pos action term.")
+    return [action_joint_names.index(name) for name in joint_names]
 
 
 @hydra_task_config(args_cli.task, args_cli.agent)
@@ -184,29 +209,45 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     export_policy_as_onnx(policy_nn, normalizer=normalizer, path=export_model_dir, filename="policy.onnx")
 
     dt = env.unwrapped.step_dt
+    log_joint_names = [
+        "joint_left_hip_pitch",
+        "joint_left_knee_pitch",
+        "joint_right_hip_pitch",
+        "joint_right_knee_pitch",
+    ]
 
     obs_logger = None
+    log_action_term = None
+    log_joint_ids = None
     if args_cli.log_obs_trajectories:
         log_obs_path = args_cli.log_obs_path
         if log_obs_path is None:
             log_obs_path = os.path.join(log_dir, "obs_trajectories.csv")
+        log_labels = [
+            "left_hip_ref",
+            "left_knee_ref",
+            "right_hip_ref",
+            "right_knee_ref",
+            "left_hip_target",
+            "left_knee_target",
+            "right_hip_target",
+            "right_knee_target",
+        ]
         obs_logger = ObsTrajectoryLogger(
             path=log_obs_path,
             obs_start=args_cli.log_obs_start,
-            obs_dim=args_cli.log_obs_dim,
+            obs_dim=len(log_labels),
             env_id=args_cli.log_obs_env_id,
-            labels=["left_hip_ref", "left_knee_ref", "right_hip_ref", "right_knee_ref"]
-            if args_cli.log_obs_dim == 4
-            else None,
+            labels=log_labels,
         )
+        log_action_term = _get_action_term(env.unwrapped.action_manager, "joint_pos")
+        log_joint_ids = _get_joint_ids(log_action_term, log_joint_names)
         print(f"[INFO] Logging observation trajectories to: {log_obs_path}")
 
     # reset environment
     obs = env.get_observations()
     timestep = 0
     play_step = 0
-    if obs_logger is not None:
-        obs_logger.log_values(env.unwrapped.hopf_reference_buf, step=play_step, time_s=0.0)
     # simulate environment
     while simulation_app.is_running():
         start_time = time.time()
@@ -220,7 +261,10 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
             policy_nn.reset(dones)
             play_step += 1
             if obs_logger is not None:
-                obs_logger.log_values(env.unwrapped.hopf_reference_buf, step=play_step, time_s=play_step * dt)
+                q_hopf_4 = env.unwrapped.hopf_reference_buf
+                q_target_all = _get_processed_actions(log_action_term)
+                q_target_4 = q_target_all[:, log_joint_ids]
+                obs_logger.log_values(torch.cat([q_hopf_4, q_target_4], dim=1), step=play_step, time_s=play_step * dt)
         if args_cli.video:
             timestep += 1
             # Exit the play loop after recording one video
