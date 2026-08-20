@@ -129,17 +129,8 @@ class HopfRewardsCfg:
         func=mdp.hopf_joint_tracking,
         weight=0.5,
         params={
-            "asset_cfg": SceneEntityCfg(
-                "robot",
-                joint_names=[
-                    "joint_left_hip_pitch",
-                    "joint_left_knee_pitch",
-                    "joint_right_hip_pitch",
-                    "joint_right_knee_pitch",
-                ],
-            ),
             "command_name": "base_velocity",
-            "std": math.sqrt(0.09),
+            "std": 0.25,
         },
     )
 
@@ -293,6 +284,10 @@ class RobotHopfPlayEnvCfg(RobotHopfEnvCfg):
         super().__post_init__()
         self.scene.num_envs = 8
         self.commands.base_velocity.ranges = self.commands.base_velocity.limit_ranges
+        # self.commands.base_velocity.ranges = mdp.UniformLevelVelocityCommandCfg.Ranges(
+        #     lin_vel_x=(0.0, 0.6), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.0, 0.0)
+        # ),
+
 
         if self.scene.terrain.terrain_generator is not None:
             self.scene.terrain.terrain_generator.num_rows = 2

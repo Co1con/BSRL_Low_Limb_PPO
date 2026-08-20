@@ -219,19 +219,29 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     obs_logger = None
     log_action_term = None
     log_joint_ids = None
+    log_robot = None
+    log_actual_joint_ids = None
     if args_cli.log_obs_trajectories:
         log_obs_path = args_cli.log_obs_path
         if log_obs_path is None:
             log_obs_path = os.path.join(log_dir, "obs_trajectories.csv")
         log_labels = [
-            "left_hip_ref",
-            "left_knee_ref",
-            "right_hip_ref",
-            "right_knee_ref",
+            # "left_hip_ref",
+            # "left_knee_ref",
+            # "right_hip_ref",
+            # "right_knee_ref",
             "left_hip_target",
             "left_knee_target",
             "right_hip_target",
             "right_knee_target",
+            "left_hip_action",
+            "left_knee_action",
+            "right_hip_action",
+            "right_knee_action",
+            "left_hip_actual",
+            "left_knee_actual",
+            "right_hip_actual",
+            "right_knee_actual",
         ]
         obs_logger = ObsTrajectoryLogger(
             path=log_obs_path,
@@ -242,6 +252,8 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         )
         log_action_term = _get_action_term(env.unwrapped.action_manager, "joint_pos")
         log_joint_ids = _get_joint_ids(log_action_term, log_joint_names)
+        log_robot = env.unwrapped.scene["robot"]
+        log_actual_joint_ids = [log_robot.data.joint_names.index(name) for name in log_joint_names]
         print(f"[INFO] Logging observation trajectories to: {log_obs_path}")
 
     # reset environment
@@ -261,10 +273,20 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
             policy_nn.reset(dones)
             play_step += 1
             if obs_logger is not None:
-                q_hopf_4 = env.unwrapped.hopf_reference_buf
+                # q_hopf_4 = env.unwrapped.hopf_reference_buf
+
                 q_target_all = _get_processed_actions(log_action_term)
                 q_target_4 = q_target_all[:, log_joint_ids]
-                obs_logger.log_values(torch.cat([q_hopf_4, q_target_4], dim=1), step=play_step, time_s=play_step * dt)
+
+                raw_actions = actions
+                q_action_4 = raw_actions[:, log_joint_ids]
+
+                q_actual_4 = log_robot.data.joint_pos[:, log_actual_joint_ids]
+
+                # log_values = torch.cat([q_hopf_4, q_target_4, q_action_4, q_actual_4], dim=1)
+                log_values = torch.cat([q_target_4, q_action_4, q_actual_4], dim=1)
+                obs_logger.log_values(log_values, step=play_step, time_s=play_step * dt)
+
         if args_cli.video:
             timestep += 1
             # Exit the play loop after recording one video

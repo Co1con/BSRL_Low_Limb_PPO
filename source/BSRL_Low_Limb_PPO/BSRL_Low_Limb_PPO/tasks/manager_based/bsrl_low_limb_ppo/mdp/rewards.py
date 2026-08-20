@@ -261,12 +261,22 @@ def long_double_support_penalty(
 
 def hopf_joint_tracking(
     env: ManagerBasedRLEnv,
-    asset_cfg: SceneEntityCfg,
     command_name: str = "base_velocity",
     std: float = 0.25,
-) -> torch.Tensor:
-    """奖励 hip/knee pitch 四个关节跟随 Hopf 参考轨迹。"""
-    asset: Articulation = env.scene[asset_cfg.name]
-    q_actual = wrap_to_pi(asset.data.joint_pos[:, asset_cfg.joint_ids])
+) -> torch.Tensor:    
+    """奖励 PD 前目标角跟随 Hopf 参考轨迹。"""
+    action_term = env.action_manager.get_term("joint_pos")
+    q_target_all = action_term.processed_actions
+
+    joint_names = [
+        "joint_left_hip_pitch",
+        "joint_left_knee_pitch",
+        "joint_right_hip_pitch",
+        "joint_right_knee_pitch",
+    ]
+    joint_ids = [action_term._joint_names.index(name) for name in joint_names]
+
+    q_target = q_target_all[:, joint_ids]
     q_hopf = hopf_reference(env, command_name)
-    return torch.exp(-torch.mean(torch.square(q_actual - q_hopf), dim=1) / std)
+
+    return torch.exp(-torch.mean((q_target - q_hopf) ** 2, dim=1) / std)
