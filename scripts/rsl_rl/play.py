@@ -14,6 +14,7 @@ from isaaclab.app import AppLauncher
 
 # local imports
 import cli_args  # isort: skip
+from utils.obs_trajectory_logger import ObsTrajectoryLogger  # isort: skip
 
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Train an RL agent with RSL-RL.")
@@ -34,6 +35,11 @@ parser.add_argument(
     help="Use the pre-trained checkpoint from Nucleus.",
 )
 parser.add_argument("--real-time", action="store_true", default=False, help="Run in real-time, if possible.")
+parser.add_argument("--log_obs_trajectories", action="store_true", default=False, help="Log selected observation dimensions during play.")
+parser.add_argument("--log_obs_path", type=str, default=None, help="CSV path for logged observation trajectories.")
+parser.add_argument("--log_obs_env_id", type=int, default=0, help="Environment id to log.")
+parser.add_argument("--log_obs_start", type=int, default=57, help="Start index of observation slice to log.")
+parser.add_argument("--log_obs_dim", type=int, default=4, help="Number of observation dimensions to log.")
 # append RSL-RL cli arguments
 cli_args.add_rsl_rl_args(parser)
 # append AppLauncher cli args
@@ -174,9 +180,28 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
 
     dt = env.unwrapped.step_dt
 
+    obs_logger = None
+    if args_cli.log_obs_trajectories:
+        log_obs_path = args_cli.log_obs_path
+        if log_obs_path is None:
+            log_obs_path = os.path.join(log_dir, "obs_trajectories.csv")
+        obs_logger = ObsTrajectoryLogger(
+            path=log_obs_path,
+            obs_start=args_cli.log_obs_start,
+            obs_dim=args_cli.log_obs_dim,
+            env_id=args_cli.log_obs_env_id,
+            labels=["left_hip_ref", "left_knee_ref", "right_hip_ref", "right_knee_ref"]
+            if args_cli.log_obs_dim == 4
+            else None,
+        )
+        print(f"[INFO] Logging observation trajectories to: {log_obs_path}")
+
     # reset environment
     obs = env.get_observations()
     timestep = 0
+    play_step = 0
+    if obs_logger is not None:
+        obs_logger.log(obs, step=play_step, time_s=0.0)
     # simulate environment
     while simulation_app.is_running():
         start_time = time.time()
@@ -188,6 +213,9 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
             obs, _, dones, _ = env.step(actions)
             # reset recurrent states for episodes that have terminated
             policy_nn.reset(dones)
+            play_step += 1
+            if obs_logger is not None:
+                obs_logger.log(obs, step=play_step, time_s=play_step * dt)
         if args_cli.video:
             timestep += 1
             # Exit the play loop after recording one video
@@ -200,6 +228,8 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
             time.sleep(sleep_time)
 
     # close the simulator
+    if obs_logger is not None:
+        obs_logger.close()
     env.close()
 
 
