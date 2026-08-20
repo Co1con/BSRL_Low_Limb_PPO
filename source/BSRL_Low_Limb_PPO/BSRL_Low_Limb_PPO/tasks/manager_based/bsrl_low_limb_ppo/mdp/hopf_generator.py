@@ -186,8 +186,10 @@ class JointHopf:
         self.omega = master_omega + self.coupling * phase_error
 
         r2 = self.x * self.x + self.y * self.y
-        self.x = self.x + (self.gamma * (self.mu - r2) * self.x - self.omega * self.y) * dt
-        self.y = self.y + (self.gamma * (self.mu - r2) * self.y + self.omega * self.x) * dt
+        dx = self.gamma * (self.mu - r2) * self.x - self.omega * self.y
+        dy = self.gamma * (self.mu - r2) * self.y + self.omega * self.x
+        self.x = self.x + dx * dt
+        self.y = self.y + dy * dt
 
         return self.q_ref * torch.sign(master_omega).unsqueeze(-1)
 
