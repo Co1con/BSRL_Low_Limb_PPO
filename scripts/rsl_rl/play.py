@@ -9,7 +9,12 @@
 
 import argparse
 import sys
+from pathlib import Path
 
+SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
+if str(SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_ROOT))
+    
 from isaaclab.app import AppLauncher
 
 # local imports
@@ -201,7 +206,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     timestep = 0
     play_step = 0
     if obs_logger is not None:
-        obs_logger.log(obs, step=play_step, time_s=0.0)
+        obs_logger.log_values(env.unwrapped.hopf_reference_buf, step=play_step, time_s=0.0)
     # simulate environment
     while simulation_app.is_running():
         start_time = time.time()
@@ -215,7 +220,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
             policy_nn.reset(dones)
             play_step += 1
             if obs_logger is not None:
-                obs_logger.log(obs, step=play_step, time_s=play_step * dt)
+                obs_logger.log_values(env.unwrapped.hopf_reference_buf, step=play_step, time_s=play_step * dt)
         if args_cli.video:
             timestep += 1
             # Exit the play loop after recording one video

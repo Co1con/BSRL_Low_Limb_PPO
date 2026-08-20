@@ -34,12 +34,27 @@ class ObsTrajectoryLogger:
     def close(self) -> None:
         self.file.close()
 
-    def log(self, obs: torch.Tensor | dict[str, torch.Tensor], step: int, time_s: float) -> None:
+    def log(self, obs, step: int, time_s: float) -> None:
+        if isinstance(obs, tuple):
+            obs = obs[0]
+
         if isinstance(obs, dict):
-            obs = obs["policy"]
+            if "policy" in obs:
+                obs = obs["policy"]
+            elif "obs" in obs:
+                obs = obs["obs"]
+            else:
+                raise KeyError(f"Cannot find policy/obs key in observation dict: {list(obs.keys())}")
+
+        if isinstance(obs, (list, tuple)):
+            obs = obs[0]
 
         if obs.ndim == 1:
             obs = obs.unsqueeze(0)
+
+        if obs.ndim != 2:
+            raise ValueError(f"Expected obs to have shape [num_envs, obs_dim], got {tuple(obs.shape)}")
+
         if self.env_id >= obs.shape[0]:
             raise IndexError(f"env_id {self.env_id} is out of bounds for obs with {obs.shape[0]} envs")
 
@@ -49,4 +64,18 @@ class ObsTrajectoryLogger:
 
         values = obs[self.env_id, self.obs_start:obs_end].detach().cpu().tolist()
         self.writer.writerow([step, time_s, self.env_id, *values])
+        self.file.flush()
+
+    def log_values(self, values: torch.Tensor, step: int, time_s: float) -> None:
+        if values.ndim == 1:
+            values = values.unsqueeze(0)
+
+        if self.env_id >= values.shape[0]:
+            raise IndexError(f"env_id {self.env_id} is out of bounds for values with {values.shape[0]} envs")
+
+        if values.shape[-1] != self.obs_dim:
+            raise ValueError(f"Expected values dim {self.obs_dim}, got {values.shape[-1]}")
+
+        row = values[self.env_id].detach().cpu().tolist()
+        self.writer.writerow([step, time_s, self.env_id, *row])
         self.file.flush()
