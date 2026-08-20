@@ -144,19 +144,6 @@ class HopfRewardsCfg:
     )
 
     # Feet
-    feet_gait = RewTerm(
-        func=mdp.feet_gait,
-        weight=0.5,
-        params={
-            "period": 0.8,
-            "offset": [0.0, 0.5],
-            "sensor_cfg": SceneEntityCfg(
-                "contact_forces", body_names=BSRL_FOOT_NAME
-            ),
-            "threshold": 0.55,
-            "command_name": "base_velocity",
-        },
-    )
     feet_double_support = RewTerm(
         func=mdp.long_double_support_penalty,
         weight=-0.5,
@@ -182,16 +169,6 @@ class HopfRewardsCfg:
             "command_name": "base_velocity",
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=BSRL_FOOT_NAME),
             "threshold": 0.5,
-        },
-    )
-    feet_clearance = RewTerm(
-        func=mdp.foot_clearance_reward,
-        weight=0.0,
-        params={
-            "std": 0.05,
-            "tanh_mult": 2.0,
-            "target_height": 0.1,
-            "asset_cfg": SceneEntityCfg("robot", body_names=BSRL_FOOT_NAME),
         },
     )
     undesired_contacts = RewTerm(
