@@ -226,10 +226,10 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         if log_obs_path is None:
             log_obs_path = os.path.join(log_dir, "obs_trajectories.csv")
         log_labels = [
-            # "left_hip_ref",
-            # "left_knee_ref",
-            # "right_hip_ref",
-            # "right_knee_ref",
+            "left_hip_ref",
+            "left_knee_ref",
+            "right_hip_ref",
+            "right_knee_ref",
             "left_hip_target",
             "left_knee_target",
             "right_hip_target",
@@ -273,18 +273,14 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
             policy_nn.reset(dones)
             play_step += 1
             if obs_logger is not None:
-                # q_hopf_4 = env.unwrapped.hopf_reference_buf
-
                 q_target_all = _get_processed_actions(log_action_term)
+
+                q_hopf_4 = env.unwrapped.hopf_reference_buf
                 q_target_4 = q_target_all[:, log_joint_ids]
-
-                raw_actions = actions
-                q_action_4 = raw_actions[:, log_joint_ids]
-
+                q_action_4 = actions[:, log_joint_ids]
                 q_actual_4 = log_robot.data.joint_pos[:, log_actual_joint_ids]
 
-                # log_values = torch.cat([q_hopf_4, q_target_4, q_action_4, q_actual_4], dim=1)
-                log_values = torch.cat([q_target_4, q_action_4, q_actual_4], dim=1)
+                log_values = torch.cat([q_hopf_4, q_target_4, q_action_4, q_actual_4], dim=1)
                 obs_logger.log_values(log_values, step=play_step, time_s=play_step * dt)
 
         if args_cli.video:

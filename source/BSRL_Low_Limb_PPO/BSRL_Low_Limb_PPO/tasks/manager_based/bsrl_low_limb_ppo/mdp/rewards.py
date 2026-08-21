@@ -261,13 +261,13 @@ def long_double_support_penalty(
 
 def hopf_joint_tracking(
     env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
     command_name: str = "base_velocity",
-    std: float = 0.15,
     command_threshold: float = 0.1,
+    std: float = 0.25,
 ) -> torch.Tensor:
-    """奖励 PD 前目标角逐关节跟随最新 Hopf 参考轨迹。"""
-    action_term = env.action_manager.get_term("joint_pos")
-    q_target_all = action_term.processed_actions
+    """奖励实际关节角逐关节跟随最新 Hopf 参考轨迹。"""
+    asset: Articulation = env.scene[asset_cfg.name]
 
     joint_names = [
         "joint_left_hip_pitch",
@@ -275,13 +275,14 @@ def hopf_joint_tracking(
         "joint_right_hip_pitch",
         "joint_right_knee_pitch",
     ]
-    joint_ids = [action_term._joint_names.index(name) for name in joint_names]
+    joint_ids = [asset.data.joint_names.index(name) for name in joint_names]
 
-    q_target = q_target_all[:, joint_ids]
     _step_hopf_generator(env, command_name)
     q_ref = env.hopf_reference_buf
+    q_actual = asset.data.joint_pos[:, joint_ids]
 
     command = env.command_manager.get_command(command_name)
     is_moving_cmd = torch.norm(command[:, :2], dim=1) > command_threshold
-    reward = torch.sum(torch.exp(-torch.square(q_target - q_ref) / std), dim=1)
+
+    reward = torch.sum(torch.exp(-torch.square(q_actual - q_ref) / std), dim=1)
     return reward * is_moving_cmd.float()
