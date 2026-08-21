@@ -264,7 +264,6 @@ def hopf_joint_tracking(
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
     command_name: str = "base_velocity",
     command_threshold: float = 0.1,
-    std: float = 0.25,
 ) -> torch.Tensor:
     """奖励实际关节角逐关节跟随最新 Hopf 参考轨迹。"""
     asset: Articulation = env.scene[asset_cfg.name]
@@ -284,5 +283,7 @@ def hopf_joint_tracking(
     command = env.command_manager.get_command(command_name)
     is_moving_cmd = torch.norm(command[:, :2], dim=1) > command_threshold
 
-    reward = torch.sum(torch.exp(-torch.square(q_actual - q_ref) / std), dim=1)
+    joint_stds = torch.tensor([0.2, 0.1, 0.2, 0.1], device=env.device)
+    reward = torch.sum(torch.exp(-torch.square(q_actual - q_ref) / joint_stds), dim=1)
+
     return reward * is_moving_cmd.float()

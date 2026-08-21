@@ -16,7 +16,7 @@ BSRL_DEFAULT_ROOT_HEIGHT = 0.8635
 
 # 训练时为每个环境随机采样 0~4 个物理步的执行器命令延迟。
 BSRL_ACTUATOR_MIN_DELAY = 0
-BSRL_ACTUATOR_MAX_DELAY = 0
+BSRL_ACTUATOR_MAX_DELAY = 2
 
 BSRL_ACTION_SCALE_MULTIPLIER = {
     "joint_.*_hip_pitch": 0.25,
@@ -83,19 +83,19 @@ BSRL_CFG = BSRLArticulationCfg(
                 "joint_.*_knee_pitch",
             ],
             effort_limit_sim=1000.0,
-            velocity_limit_sim=10.0,
+            velocity_limit_sim=20.0,
             armature=0.01,
             stiffness={
-                "joint_.*_hip_pitch": 200,
-                "joint_.*_hip_roll": 150,
-                "joint_.*_hip_yaw": 150,
-                "joint_.*_knee_pitch": 300,
+                "joint_.*_hip_pitch": 300,
+                "joint_.*_hip_roll": 200,
+                "joint_.*_hip_yaw": 200,
+                "joint_.*_knee_pitch": 450,
             },
             damping={
-                "joint_.*_hip_pitch": 15,
-                "joint_.*_hip_roll": 10,
-                "joint_.*_hip_yaw": 10,
-                "joint_.*_knee_pitch": 20,
+                "joint_.*_hip_pitch": 20,
+                "joint_.*_hip_roll": 15,
+                "joint_.*_hip_yaw": 15,
+                "joint_.*_knee_pitch": 25,
             },
         ),
         "feet": DelayedImplicitActuatorCfg(
@@ -106,7 +106,7 @@ BSRL_CFG = BSRLArticulationCfg(
                 "joint_.*_ankle_pitch",
             ],
             effort_limit_sim=1000.0,
-            velocity_limit_sim=10.0,
+            velocity_limit_sim=20.0,
             armature=0.01,
             stiffness={
                 "joint_.*_ankle_roll": 100,

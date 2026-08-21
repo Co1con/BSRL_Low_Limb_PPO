@@ -132,7 +132,6 @@ class HopfRewardsCfg:
             "asset_cfg": SceneEntityCfg("robot"),
             "command_name": "base_velocity",
             "command_threshold": 0.1,
-            "std": 0.25,
         },
     )
 
