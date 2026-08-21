@@ -221,7 +221,7 @@ class RewardsCfg:
     )
     feet_double_support = RewTerm(
         func=mdp.long_double_support_penalty,
-        weight=-1.0,
+        weight=-0.5,
         params={
             "command_name": "base_velocity",
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=BSRL_FOOT_NAME),
