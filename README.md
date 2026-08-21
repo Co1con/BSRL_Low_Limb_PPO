@@ -134,8 +134,15 @@ Some examples of packages that can likely be excluded are:
 ...
 ```
 
-### Command
+## Command
+### train:
 ```
-python scripts/rsl_rl/train.py --task=bsrl-hopf-velocity-train --num_envs=4096 --max_iterations=5000  --run_name=hopf   --headless   --video
-python scripts/rsl_rl/play.py  --task bsrl-hopf-velocity-play  --num_envs=1    --log_obs_trajectories --log_obs_path logs/hopf_obs.csv
+python scripts/rsl_rl/train.py --task=bsrl-hopf-velocity-train --num_envs=4096 --max_iterations=5000 --run_name=hopf --headless --video
+
+python scripts/rsl_rl/train.py --task=bsrl-hopf-velocity-train --num_envs=4096 --max_iterations=5000 --run_name=hopf --headless --video --resume --load_run=<last run dir name> --checkpoint=<checkpoint doc name>
+```
+
+### play:
+```
+python scripts/rsl_rl/play.py --task=bsrl-hopf-velocity-play --num_envs=1 --log_obs_trajectories --log_obs_path logs/hopf_obs.csv
 ```

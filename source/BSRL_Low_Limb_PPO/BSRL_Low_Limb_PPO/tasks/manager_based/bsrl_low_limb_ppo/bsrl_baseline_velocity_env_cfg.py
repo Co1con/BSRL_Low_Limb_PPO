@@ -269,7 +269,7 @@ class RewardsCfg:
 @configclass
 class TerminationsCfg:
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
-    base_height = DoneTerm(func=mdp.root_height_below_minimum, params={"minimum_height": 0.1})
+    base_height = DoneTerm(func=mdp.root_height_below_minimum, params={"minimum_height": 0.3})
     base_contact = DoneTerm(
         func=mdp.illegal_contact,
         params={

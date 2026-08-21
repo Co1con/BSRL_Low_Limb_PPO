@@ -286,9 +286,6 @@ class RobotHopfPlayEnvCfg(RobotHopfEnvCfg):
         super().__post_init__()
         self.scene.num_envs = 8
         self.commands.base_velocity.ranges = self.commands.base_velocity.limit_ranges
-        # self.commands.base_velocity.ranges = mdp.UniformLevelVelocityCommandCfg.Ranges(
-        #     lin_vel_x=(0.0, 0.6), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.0, 0.0)
-        # ),
 
 
         if self.scene.terrain.terrain_generator is not None:
