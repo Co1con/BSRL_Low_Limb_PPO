@@ -31,8 +31,7 @@ class HopfObservationsCfg:
         joint_effort = ObsTerm(func=mdp.joint_effort, scale=0.01)
         last_action = ObsTerm(func=mdp.last_action)
 
-        hopf_reference = ObsTerm(func=mdp.hopf_reference, params={"command_name": "base_velocity"})
-        hopf_state = ObsTerm(func=mdp.hopf_state, params={"command_name": "base_velocity"})
+        hopf_master_xy = ObsTerm(func=mdp.hopf_master_xy, params={"command_name": "base_velocity"})
 
         def __post_init__(self):
             # self.history_length = 5
@@ -57,8 +56,7 @@ class HopfObservationsCfg:
             clip=(-1.0, 5.0),
         )
 
-        hopf_reference = ObsTerm(func=mdp.hopf_reference, params={"command_name": "base_velocity"})
-        hopf_state = ObsTerm(func=mdp.hopf_state, params={"command_name": "base_velocity"})
+        hopf_master_xy = ObsTerm(func=mdp.hopf_master_xy, params={"command_name": "base_velocity"})
 
         # def __post_init__(self):
         #     self.history_length = 5
@@ -77,10 +75,10 @@ class HopfCommandsCfg:
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.UniformLevelVelocityCommandCfg.Ranges(
-            lin_vel_x=(0.0, 0.0), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.0, 0.0)
+            lin_vel_x=(0.3, 0.5), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.0, 0.0)
         ),
         limit_ranges=mdp.UniformLevelVelocityCommandCfg.Ranges(
-            lin_vel_x=(0.0, 1.0), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.0, 0.0)
+            lin_vel_x=(-0.2, 1.0), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.0, 0.0)
         ),
     )
 
@@ -130,7 +128,8 @@ class HopfRewardsCfg:
         weight=0.5,
         params={
             "command_name": "base_velocity",
-            "std": 0.25,
+            "std": 0.15,
+            "command_threshold": 0.1,
         },
     )
 

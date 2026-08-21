@@ -18,7 +18,7 @@ from isaaclab.managers import SceneEntityCfg
 from isaaclab.sensors import ContactSensor
 from isaaclab.utils.math import wrap_to_pi
 
-from .observations import hopf_reference
+from .observations import _step_hopf_generator
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
@@ -262,9 +262,10 @@ def long_double_support_penalty(
 def hopf_joint_tracking(
     env: ManagerBasedRLEnv,
     command_name: str = "base_velocity",
-    std: float = 0.25,
-) -> torch.Tensor:    
-    """奖励 PD 前目标角跟随 Hopf 参考轨迹。"""
+    std: float = 0.15,
+    command_threshold: float = 0.1,
+) -> torch.Tensor:
+    """奖励 PD 前目标角逐关节跟随最新 Hopf 参考轨迹。"""
     action_term = env.action_manager.get_term("joint_pos")
     q_target_all = action_term.processed_actions
 
@@ -277,6 +278,10 @@ def hopf_joint_tracking(
     joint_ids = [action_term._joint_names.index(name) for name in joint_names]
 
     q_target = q_target_all[:, joint_ids]
-    q_hopf = hopf_reference(env, command_name)
+    _step_hopf_generator(env, command_name)
+    q_ref = env.hopf_reference_buf
 
-    return torch.exp(-torch.mean((q_target - q_hopf) ** 2, dim=1) / std)
+    command = env.command_manager.get_command(command_name)
+    is_moving_cmd = torch.norm(command[:, :2], dim=1) > command_threshold
+    reward = torch.sum(torch.exp(-torch.square(q_target - q_ref) / std), dim=1)
+    return reward * is_moving_cmd.float()

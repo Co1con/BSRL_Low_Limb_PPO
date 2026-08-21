@@ -63,3 +63,9 @@ def hopf_state(env: ManagerBasedRLEnv, command_name: str = "base_velocity") -> t
     """输出 master、left、right 三个 Hopf 振荡器的内部状态。"""
     _step_hopf_generator(env, command_name)
     return env.hopf_state_buf
+
+
+def hopf_master_xy(env: ManagerBasedRLEnv, command_name: str = "base_velocity") -> torch.Tensor:
+    """输出 MasterHopf 的 x、y，同时刷新 hopf_reference_buf。"""
+    _step_hopf_generator(env, command_name)
+    return env.hopf_state_buf[:, :2]
