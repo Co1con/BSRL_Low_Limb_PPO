@@ -146,3 +146,8 @@ python scripts/rsl_rl/train.py --task=bsrl-hopf-velocity-train --num_envs=4096 -
 ```
 python scripts/rsl_rl/play.py --task=bsrl-hopf-velocity-play --num_envs=1 --log_obs_trajectories --log_obs_path logs/hopf_obs.csv
 ```
+
+### tensorboard
+```
+tensorboard --logdir logs/rsl_rl --port 6006
+```

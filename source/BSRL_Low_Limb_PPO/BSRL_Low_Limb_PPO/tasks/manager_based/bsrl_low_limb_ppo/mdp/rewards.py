@@ -265,7 +265,6 @@ def hopf_joint_tracking(
     command_name: str = "base_velocity",
     command_threshold: float = 0.1,
 ) -> torch.Tensor:
-    """奖励实际关节角逐关节跟随最新 Hopf 参考轨迹。"""
     asset: Articulation = env.scene[asset_cfg.name]
 
     joint_names = [

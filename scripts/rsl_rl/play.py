@@ -19,7 +19,7 @@ from isaaclab.app import AppLauncher
 
 # local imports
 import cli_args  # isort: skip
-from utils.obs_trajectory_logger import ObsTrajectoryLogger  # isort: skip
+from utils.observation_logger import ObservationLogger  # isort: skip
 
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Train an RL agent with RSL-RL.")
@@ -243,7 +243,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
             "right_hip_actual",
             "right_knee_actual",
         ]
-        obs_logger = ObsTrajectoryLogger(
+        obs_logger = ObservationLogger(
             path=log_obs_path,
             obs_start=args_cli.log_obs_start,
             obs_dim=len(log_labels),

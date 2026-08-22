@@ -7,7 +7,7 @@ from typing import Sequence
 import torch
 
 
-class ObsTrajectoryLogger:
+class ObservationLogger:
     """Record selected observation dimensions from one environment during play."""
 
     def __init__(
