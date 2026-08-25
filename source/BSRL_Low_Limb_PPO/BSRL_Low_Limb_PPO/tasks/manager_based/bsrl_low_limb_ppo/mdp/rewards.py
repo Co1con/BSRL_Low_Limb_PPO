@@ -18,7 +18,7 @@ from isaaclab.managers import SceneEntityCfg
 from isaaclab.sensors import ContactSensor
 from isaaclab.utils.math import wrap_to_pi
 
-from .observations import _step_hopf_generator
+from .observations import _step_hopf_generator  # pyright: ignore[reportPrivateUsage]
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
@@ -279,8 +279,8 @@ def hopf_joint_tracking(
     q_ref = env.hopf_reference_buf
     q_actual = asset.data.joint_pos[:, joint_ids]
 
-    command = env.command_manager.get_command(command_name)
-    is_moving_cmd = torch.norm(command[:, :2], dim=1) > command_threshold
+    # command = env.command_manager.get_command(command_name)
+    # is_moving_cmd = torch.norm(command[:, :2], dim=1) > command_threshold
 
     joint_stds = torch.tensor([0.2, 0.1, 0.2, 0.1], device=env.device)
     reward = torch.sum(torch.exp(-torch.square(q_actual - q_ref) / joint_stds), dim=1)

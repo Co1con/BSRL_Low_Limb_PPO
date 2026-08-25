@@ -87,7 +87,7 @@ def _transform_policy_obs_left_right(obs: torch.Tensor) -> torch.Tensor:
         start_idx = end_idx
         end_idx = start_idx + BSRL_JOINT_DIM
         obs[:, start_idx:end_idx] = _switch_bsrl_12dof_joints_left_right(obs[:, start_idx:end_idx])
-        
+
     obs[:, end_idx : end_idx + 2] *= -1.0
 
     return obs
