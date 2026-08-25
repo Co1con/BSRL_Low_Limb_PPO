@@ -106,7 +106,7 @@ class HopfRewardsCfg:
         func=mdp.base_height_l2,
         weight=-10.0,
         params={
-            "target_height": BSRL_DEFAULT_ROOT_HEIGHT,
+            "target_height": BSRL_DEFAULT_ROOT_HEIGHT * 0.9,
             "asset_cfg": SceneEntityCfg("robot"),
             "sensor_cfg": SceneEntityCfg("height_scanner"),
         },
@@ -156,11 +156,11 @@ class HopfRewardsCfg:
     )
     feet_air_time = RewTerm(
         func=mdp.feet_air_time_positive_biped,
-        weight=1.0,
+        weight=0.3,
         params={            
             "command_name": "base_velocity",
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=BSRL_FOOT_NAME),
-            "threshold": 0.5,
+            "threshold": 0.3,
         },
     )
     undesired_contacts = RewTerm(
