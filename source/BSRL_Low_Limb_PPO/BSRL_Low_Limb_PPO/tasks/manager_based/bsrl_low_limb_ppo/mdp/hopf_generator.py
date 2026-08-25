@@ -230,8 +230,8 @@ class LowLimbGenerator:
         vx = vx.to(device=self.device, dtype=self.dtype).view(self.num_envs)
         abs_vx = torch.abs(vx)
 
-        freq = -0.3407 * abs_vx * abs_vx + 1.1721 * abs_vx + 0.1003
-        freq = torch.clamp(freq, min=0.0, max=1.5)
+        freq = self.velocity_freq_slope * abs_vx + self.velocity_freq_intercept
+        freq = torch.clamp(freq, min=0.0, max=2.0)
 
         return torch.where(abs_vx < 1e-6, torch.zeros_like(freq), freq)
 

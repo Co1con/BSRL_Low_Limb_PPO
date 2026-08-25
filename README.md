@@ -144,9 +144,9 @@ python scripts/random_agent.py --task=bsrl-hopf-velocity-play
 
 ### train:
 ```
-python scripts/rsl_rl/train.py --task=bsrl-hopf-velocity-train --num_envs=8192 --max_iterations=10000 --run_name=hopf_<hip_kp>_<hip_kd>_<knee_kp>_<knee_kd>_<version> --headless --video
+python scripts/rsl_rl/train.py --task=bsrl-hopf-velocity-train --num_envs=8192 --max_iterations=10000 --run_name=hopf_<version> --headless --video
 
-python scripts/rsl_rl/train.py --task=bsrl-hopf-velocity-train --num_envs=8192 --max_iterations=10000 --run_name=hopf_<hip_kp>_<hip_kd>_<knee_kp>_<knee_kd>_<version> --headless --video --resume --load_run=<last run dir name> --checkpoint=<checkpoint doc name>
+python scripts/rsl_rl/train.py --task=bsrl-hopf-velocity-train --num_envs=8192 --max_iterations=10000 --run_name=hopf_<version> --headless --video --resume --load_run=<last run dir name> --checkpoint=<checkpoint doc name>
 ```
 
 ### play:

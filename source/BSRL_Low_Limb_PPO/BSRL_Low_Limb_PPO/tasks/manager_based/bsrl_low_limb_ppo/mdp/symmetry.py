@@ -13,19 +13,19 @@ if TYPE_CHECKING:
 __all__ = ["compute_symmetric_states"]
 
 
-# Isaac Lab joint/action order for this asset:
-# 0 right_hip_yaw       6 left_hip_yaw
-# 1 right_hip_roll      7 left_hip_roll
-# 2 right_hip_pitch     8 left_hip_pitch
-# 3 right_knee_pitch    9 left_knee_pitch
-# 4 right_ankle_pitch   10 left_ankle_pitch
-# 5 right_ankle_roll    11 left_ankle_roll
+# Isaac Lab runtime joint/action order for this asset:
+#   0 left_hip_yaw      1 right_hip_yaw
+#   2 left_hip_roll     3 right_hip_roll
+#   4 left_hip_pitch    5 right_hip_pitch
+#   6 left_knee_pitch   7 right_knee_pitch
+#   8 left_ankle_pitch  9 right_ankle_pitch
+#  10 left_ankle_roll  11 right_ankle_roll
 
 BSRL_JOINT_DIM = 12
 BSRL_POLICY_OBS_DIM = 59
-BSRL_LEFT_RIGHT_PERM = torch.tensor([6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5], dtype=torch.long)
+BSRL_LEFT_RIGHT_PERM = torch.tensor([1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10], dtype=torch.long)
 BSRL_JOINT_SIGNS = torch.tensor(
-    [-1.0, -1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, -1.0],
+    [-1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0],
     dtype=torch.float32,
 )
 

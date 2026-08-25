@@ -75,10 +75,10 @@ class HopfCommandsCfg:
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.UniformLevelVelocityCommandCfg.Ranges(
-            lin_vel_x=(0.3, 0.5), lin_vel_y=(-0.2, 0.2), ang_vel_z=(-0.5, 0.5)
+            lin_vel_x=(0.3, 0.5), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.3, 0.3)
         ),
         limit_ranges=mdp.UniformLevelVelocityCommandCfg.Ranges(
-            lin_vel_x=(0.0, 1.4), lin_vel_y=(-0.5, 0.5), ang_vel_z=(-0.5, 0.5)
+            lin_vel_x=(0.0, 1.5), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.3, 0.3)
         ),
     )
 
@@ -156,11 +156,11 @@ class HopfRewardsCfg:
     )
     feet_air_time = RewTerm(
         func=mdp.feet_air_time_positive_biped,
-        weight=0.3,
+        weight=1.0,
         params={            
             "command_name": "base_velocity",
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=BSRL_FOOT_NAME),
-            "threshold": 0.3,
+            "threshold": 0.5,
         },
     )
     undesired_contacts = RewTerm(
