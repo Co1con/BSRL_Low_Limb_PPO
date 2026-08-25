@@ -4,23 +4,22 @@ import isaaclab.sim as sim_utils
 from isaaclab.assets.articulation import ArticulationCfg
 from isaaclab.utils import configclass
 
-from BSRL_Low_Limb_PPO.assets.delayed_implicit_actuator import DelayedImplicitActuatorCfg
+from BSRL_Low_Limb_PPO.assets.delayed_implicit_actuator import DelayedPowerLimitedPDActuatorCfg
 
 BSRL_MODEL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "bsrl"))
 
-# GMR walk1 第一帧左右腿平均并按 0.1 rad 对称化后的贴地站姿高度。
 BSRL_DEFAULT_ROOT_HEIGHT = 0.8665
 
-# 训练时为每个环境随机采样 0~4 个物理步的执行器命令延迟。
 BSRL_ACTUATOR_MIN_DELAY = 0
 BSRL_ACTUATOR_MAX_DELAY = 4
 
-# Gearbox-output limits from the SETZ motor datasheet. The small motor is the
-# faster SETZ70-1EB-J; the large motor is the higher-torque SETZ90-1FF-J.
 BSRL_SMALL_MOTOR_PEAK_TORQUE = 112.0
 BSRL_SMALL_MOTOR_PEAK_SPEED = 250.0 * 2.0 * 3.141592653589793 / 60.0
+BSRL_SMALL_MOTOR_PEAK_POWER = 1250.0
+
 BSRL_LARGE_MOTOR_PEAK_TORQUE = 216.0
 BSRL_LARGE_MOTOR_PEAK_SPEED = 144.5 * 2.0 * 3.141592653589793 / 60.0
+BSRL_LARGE_MOTOR_PEAK_POWER = 1050.0
 
 BSRL_ACTION_SCALE_MULTIPLIER = {
     "joint_.*_hip_pitch": 0.25,
@@ -70,7 +69,7 @@ BSRL_CFG = BSRLArticulationCfg(
         joint_vel={".*": 0.0},
     ),
     actuators={
-        "large_motors": DelayedImplicitActuatorCfg(
+        "large_motors": DelayedPowerLimitedPDActuatorCfg(
             min_delay=BSRL_ACTUATOR_MIN_DELAY,
             max_delay=BSRL_ACTUATOR_MAX_DELAY,
             joint_names_expr=[
@@ -82,6 +81,7 @@ BSRL_CFG = BSRLArticulationCfg(
             effort_limit_sim=BSRL_LARGE_MOTOR_PEAK_TORQUE,
             velocity_limit=BSRL_LARGE_MOTOR_PEAK_SPEED,
             velocity_limit_sim=BSRL_LARGE_MOTOR_PEAK_SPEED,
+            peak_power=BSRL_LARGE_MOTOR_PEAK_POWER,
             armature=0.01,
             stiffness={
                 "joint_.*_hip_pitch": 100,
@@ -94,8 +94,7 @@ BSRL_CFG = BSRLArticulationCfg(
                 "joint_.*_knee_pitch": 4,
             },
         ),
-        # SETZ70-1EB-J (16:1): hip yaw and both ankle axes.
-        "small_motors": DelayedImplicitActuatorCfg(
+        "small_motors": DelayedPowerLimitedPDActuatorCfg(
             min_delay=BSRL_ACTUATOR_MIN_DELAY,
             max_delay=BSRL_ACTUATOR_MAX_DELAY,
             joint_names_expr=[
@@ -107,6 +106,7 @@ BSRL_CFG = BSRLArticulationCfg(
             effort_limit_sim=BSRL_SMALL_MOTOR_PEAK_TORQUE,
             velocity_limit=BSRL_SMALL_MOTOR_PEAK_SPEED,
             velocity_limit_sim=BSRL_SMALL_MOTOR_PEAK_SPEED,
+            peak_power=BSRL_SMALL_MOTOR_PEAK_POWER,
             armature=0.01,
             stiffness={
                 "joint_.*_hip_yaw": 100,
