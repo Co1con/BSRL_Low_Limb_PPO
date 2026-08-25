@@ -23,8 +23,7 @@ def lin_vel_cmd_levels(
     reward_term = env.reward_manager.get_term_cfg(reward_term_name)
     reward = torch.mean(env.reward_manager._episode_sums[reward_term_name][env_ids]) / env.max_episode_length_s
 
-    # if env.common_step_counter % env.max_episode_length == 0:
-    if env.common_step_counter % env.max_episode_length >= env.max_episode_length * 0.9975:
+    if env.common_step_counter % env.max_episode_length == 0:
         if reward > reward_term.weight * 0.8:
             delta_command = torch.tensor([-0.1, 0.1], device=env.device)
             ranges.lin_vel_x = torch.clamp(
@@ -53,8 +52,7 @@ def ang_vel_cmd_levels(
     reward_term = env.reward_manager.get_term_cfg(reward_term_name)
     reward = torch.mean(env.reward_manager._episode_sums[reward_term_name][env_ids]) / env.max_episode_length_s
 
-    # if env.common_step_counter % env.max_episode_length == 0:
-    if env.common_step_counter % env.max_episode_length >= env.max_episode_length * 0.9975:
+    if env.common_step_counter % env.max_episode_length == 0:
         if reward > reward_term.weight * 0.8:
             delta_command = torch.tensor([-0.1, 0.1], device=env.device)
             ranges.ang_vel_z = torch.clamp(

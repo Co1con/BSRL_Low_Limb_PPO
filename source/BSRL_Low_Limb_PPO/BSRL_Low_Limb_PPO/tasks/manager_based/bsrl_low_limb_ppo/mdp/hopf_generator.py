@@ -228,8 +228,12 @@ class LowLimbGenerator:
 
     def velocity_to_frequency(self, vx: torch.Tensor) -> torch.Tensor:
         vx = vx.to(device=self.device, dtype=self.dtype).view(self.num_envs)
-        freq = self.velocity_freq_slope * torch.abs(vx) + self.velocity_freq_intercept
-        return torch.where(torch.abs(vx) < 1e-6, torch.zeros_like(freq), freq)
+        abs_vx = torch.abs(vx)
+
+        freq = -0.3407 * abs_vx * abs_vx + 1.1721 * abs_vx + 0.1003
+        freq = torch.clamp(freq, min=0.0, max=1.5)
+
+        return torch.where(abs_vx < 1e-6, torch.zeros_like(freq), freq)
 
     def step(self, freq_hz: torch.Tensor, dt: float) -> torch.Tensor:
         freq_hz = freq_hz.to(device=self.device, dtype=self.dtype).view(self.num_envs)
