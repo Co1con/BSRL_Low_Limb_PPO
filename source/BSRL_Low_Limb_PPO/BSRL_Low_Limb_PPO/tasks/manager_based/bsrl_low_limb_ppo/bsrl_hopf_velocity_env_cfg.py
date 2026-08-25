@@ -215,8 +215,8 @@ class HopfEventCfg:
         mode="reset",
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names="base_link"),
-            "force_range": (0.0, 0.0),
-            "torque_range": (-0.0, 0.0),
+            "force_range": (-10.0, 10.0),
+            "torque_range": (-2.0, 2.0),
         },
     )
     # 随机重置位姿
@@ -233,14 +233,6 @@ class HopfEventCfg:
                 "pitch": (0.0, 0.0),
                 "yaw": (0.0, 0.0),
             },
-            # "velocity_range": {
-                # "x": (-0.5, 0.5),
-                # "y": (-0.5, 0.5),
-                # "z": (-0.5, 0.5),
-                # "roll": (-0.5, 0.5),
-                # "pitch": (-0.5, 0.5),
-                # "yaw": (-0.5, 0.5),
-            # },
         },
     )
     # 随机大小
@@ -248,18 +240,18 @@ class HopfEventCfg:
         func=mdp.reset_joints_by_scale,
         mode="reset",
         params={
-            "position_range": (1.0, 1.0),
-            "velocity_range": (-0.0, 0.0),
+            "position_range": (0.9, 1.1),
+            "velocity_range": (-0.5, 0.5),
         },
     )
     ## interval
     # 随机施加速度以推动机器人
-    # push_robot = EventTerm(
-    #     func=mdp.push_by_setting_velocity,
-    #     mode="interval",
-    #     interval_range_s=(10.0, 15.0),
-    #     params={"velocity_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5)}},
-    # )
+    push_robot = EventTerm(
+        func=mdp.push_by_setting_velocity,
+        mode="interval",
+        interval_range_s=(5.0, 5.0),
+        params={"velocity_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5)}},
+    )
 
 
 @configclass
