@@ -259,6 +259,11 @@ def long_double_support_penalty(
     return penalty * is_moving_cmd.float()
 
 
+def base_roll_l2(env: ManagerBasedRLEnv) -> torch.Tensor:
+    asset: RigidObject = env.scene["robot"]
+    return torch.square(asset.data.projected_gravity_b[:, 1])
+
+
 def hopf_joint_tracking(
     env: ManagerBasedRLEnv,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),

@@ -135,6 +135,8 @@ class HopfRewardsCfg:
         },
     )
 
+    base_roll = RewTerm(func=mdp.base_roll_l2, weight=-1.0)
+    
     # Feet
     feet_double_support = RewTerm(
         func=mdp.long_double_support_penalty,
