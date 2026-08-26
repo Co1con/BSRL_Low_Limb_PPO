@@ -75,10 +75,10 @@ class HopfCommandsCfg:
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.UniformLevelVelocityCommandCfg.Ranges(
-            lin_vel_x=(0.3, 0.5), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.3, 0.3)
+            lin_vel_x=(0.3, 0.5), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.5, 0.5)
         ),
         limit_ranges=mdp.UniformLevelVelocityCommandCfg.Ranges(
-            lin_vel_x=(0.0, 1.5), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.3, 0.3)
+            lin_vel_x=(0.0, 1.5), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.5, 0.5)
         ),
     )
 
