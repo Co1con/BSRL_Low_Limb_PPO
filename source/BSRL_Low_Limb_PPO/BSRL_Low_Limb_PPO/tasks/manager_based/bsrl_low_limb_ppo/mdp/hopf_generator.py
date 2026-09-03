@@ -202,8 +202,8 @@ class LowLimbGenerator:
         num_envs: int,
         device: str | torch.device,
         dtype: torch.dtype = torch.float32,
-        velocity_freq_slope: float = 0.45,
-        velocity_freq_intercept: float = 0.60,
+        velocity_freq_slope: float = 0.48749031,
+        velocity_freq_intercept: float = 0.60252246,
     ):
         self.num_envs = num_envs
         self.device = torch.device(device)
