@@ -283,12 +283,17 @@ class RobotHopfEnvCfg(RobotEnvCfg):
 class RobotHopfPlayEnvCfg(RobotHopfEnvCfg):
     def __post_init__(self):
         super().__post_init__()
-        self.scene.num_envs = 8
+        self.scene.num_envs = 1
         # self.commands.base_velocity.ranges = self.commands.base_velocity.limit_ranges
         self.commands.base_velocity.ranges = mdp.UniformLevelVelocityCommandCfg.Ranges(
             lin_vel_x=(0.0, 1.5), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.0, 0.0)
         )
 
+        # # 辨识 “步速->步频” 的关系
+        # identify_vx = 1.5
+        # self.commands.base_velocity.ranges = mdp.UniformLevelVelocityCommandCfg.Ranges(
+        #     lin_vel_x=(identify_vx, identify_vx), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.0, 0.0)
+        # )
 
         if self.scene.terrain.terrain_generator is not None:
             self.scene.terrain.terrain_generator.num_rows = 2
