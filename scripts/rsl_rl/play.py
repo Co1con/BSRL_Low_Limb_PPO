@@ -242,6 +242,10 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
             "left_knee_actual",
             "right_hip_actual",
             "right_knee_actual",
+            "vx_command",
+            "vx_actual_body",
+            "hopf_frequency_command_hz",
+            "hopf_master_frequency_hz",
         ]
         obs_logger = ObservationLogger(
             path=log_obs_path,
@@ -279,8 +283,24 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
                 q_target_4 = q_target_all[:, log_joint_ids]
                 q_action_4 = actions[:, log_joint_ids]
                 q_actual_4 = log_robot.data.joint_pos[:, log_actual_joint_ids]
+                vx_command = env.unwrapped.command_manager.get_command("base_velocity")[:, 0:1]
+                vx_actual_body = log_robot.data.root_lin_vel_b[:, 0:1]
+                hopf_frequency_command = env.unwrapped.hopf_generator.current_frequency_hz.unsqueeze(-1)
+                hopf_master_frequency = env.unwrapped.hopf_generator.master.omega.unsqueeze(-1) / (2.0 * torch.pi)
 
-                log_values = torch.cat([q_hopf_4, q_target_4, q_action_4, q_actual_4], dim=1)
+                log_values = torch.cat(
+                    [
+                        q_hopf_4,
+                        q_target_4,
+                        q_action_4,
+                        q_actual_4,
+                        vx_command,
+                        vx_actual_body,
+                        hopf_frequency_command,
+                        hopf_master_frequency,
+                    ],
+                    dim=1,
+                )
                 obs_logger.log_values(log_values, step=play_step, time_s=play_step * dt)
 
         if args_cli.video:

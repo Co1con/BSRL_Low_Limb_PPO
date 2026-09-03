@@ -210,6 +210,7 @@ class LowLimbGenerator:
         self.dtype = dtype
         self.velocity_freq_slope = velocity_freq_slope
         self.velocity_freq_intercept = velocity_freq_intercept
+        self.current_frequency_hz = torch.zeros(num_envs, device=self.device, dtype=self.dtype)
 
         self.master = MasterHopf(num_envs=num_envs, device=self.device, dtype=self.dtype)
         self.left = JointHopf(num_envs=num_envs, device=self.device, dtype=self.dtype, offset=0.0)
@@ -221,6 +222,7 @@ class LowLimbGenerator:
         self.master.reset(env_ids, phase)
         self.left.reset(env_ids, self.master.phase[env_ids])
         self.right.reset(env_ids, self.master.phase[env_ids])
+        self.current_frequency_hz[env_ids] = 0.0
 
     @property
     def state(self) -> torch.Tensor:
@@ -237,6 +239,7 @@ class LowLimbGenerator:
 
     def step(self, freq_hz: torch.Tensor, dt: float) -> torch.Tensor:
         freq_hz = freq_hz.to(device=self.device, dtype=self.dtype).view(self.num_envs)
+        self.current_frequency_hz.copy_(freq_hz)
         self.master.step(2.0 * math.pi * freq_hz, dt)
         left = self.left.step(self.master.x, self.master.y, self.master.omega, dt)
         right = self.right.step(self.master.x, self.master.y, self.master.omega, dt)
