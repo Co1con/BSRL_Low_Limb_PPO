@@ -287,7 +287,7 @@ def hopf_joint_tracking(
     # command = env.command_manager.get_command(command_name)
     # is_moving_cmd = torch.norm(command[:, :2], dim=1) > command_threshold
 
-    joint_stds = torch.tensor([0.2, 0.1, 0.2, 0.1], device=env.device)
+    joint_stds = torch.tensor([0.3, 0.2, 0.3, 0.2], device=env.device)
     reward = torch.sum(torch.exp(-torch.square(q_actual - q_ref) / joint_stds), dim=1)
 
     return reward

@@ -132,7 +132,7 @@ class HopfRewardsCfg:
     # hopf-constraint
     hopf_joint_tracking = RewTerm(
         func=mdp.hopf_joint_tracking,
-        weight=0.5,
+        weight=0.4,
         params={
             "asset_cfg": SceneEntityCfg("robot"),
             "command_name": "base_velocity",
