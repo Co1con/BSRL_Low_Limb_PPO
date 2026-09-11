@@ -31,7 +31,7 @@ class HopfObservationsCfg:
         joint_effort = ObsTerm(func=mdp.joint_effort, scale=0.01)
         last_action = ObsTerm(func=mdp.last_action)
 
-        hopf_master_xy = ObsTerm(func=mdp.hopf_master_xy, params={"command_name": "base_velocity"})
+        rhythm_hopf_xy = ObsTerm(func=mdp.rhythm_hopf_xy, params={"command_name": "base_velocity"})
 
         def __post_init__(self):
             # self.history_length = 5
@@ -56,7 +56,7 @@ class HopfObservationsCfg:
             clip=(-1.0, 5.0),
         )
 
-        hopf_master_xy = ObsTerm(func=mdp.hopf_master_xy, params={"command_name": "base_velocity"})
+        rhythm_hopf_xy = ObsTerm(func=mdp.rhythm_hopf_xy, params={"command_name": "base_velocity"})
 
         # def __post_init__(self):
         #     self.history_length = 5
@@ -130,8 +130,8 @@ class HopfRewardsCfg:
     )
 
     # hopf-constraint
-    hopf_joint_tracking = RewTerm(
-        func=mdp.hopf_joint_tracking,
+    cpg_joint_tracking = RewTerm(
+        func=mdp.cpg_joint_tracking,
         weight=0.4,
         params={
             "asset_cfg": SceneEntityCfg("robot"),

@@ -18,7 +18,10 @@ from isaaclab.managers import SceneEntityCfg
 from isaaclab.sensors import ContactSensor
 from isaaclab.utils.math import wrap_to_pi
 
-from .observations import _step_hopf_generator  # pyright: ignore[reportPrivateUsage]
+from .observations import (  # pyright: ignore[reportPrivateUsage]
+    _step_hopf_generator,
+    _step_low_limb_cpg,
+)
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
@@ -291,3 +294,34 @@ def hopf_joint_tracking(
     reward = torch.sum(torch.exp(-torch.square(q_actual - q_ref) / joint_stds), dim=1)
 
     return reward
+
+
+# =========================== 新版 LowLimbCPG ===========================
+
+
+def cpg_joint_tracking(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    command_name: str = "base_velocity",
+    command_threshold: float = 0.1,
+) -> torch.Tensor:
+    """奖励实际髋膝角对新版 LowLimbCPG 参考角的跟踪。"""
+    asset: Articulation = env.scene[asset_cfg.name]
+
+    joint_names = [
+        "joint_left_hip_pitch",
+        "joint_left_knee_pitch",
+        "joint_right_hip_pitch",
+        "joint_right_knee_pitch",
+    ]
+    joint_ids = [asset.data.joint_names.index(name) for name in joint_names]
+
+    _step_low_limb_cpg(env, command_name)
+    q_ref = env.low_limb_cpg_reference_buf
+    q_actual = asset.data.joint_pos[:, joint_ids]
+
+    command = env.command_manager.get_command(command_name)
+    is_moving_cmd = torch.norm(command[:, :2], dim=1) > command_threshold
+    joint_stds = torch.tensor([0.3, 0.2, 0.3, 0.2], device=env.device)
+    reward = torch.sum(torch.exp(-torch.square(q_actual - q_ref) / joint_stds), dim=1)
+    return reward * is_moving_cmd.float()
