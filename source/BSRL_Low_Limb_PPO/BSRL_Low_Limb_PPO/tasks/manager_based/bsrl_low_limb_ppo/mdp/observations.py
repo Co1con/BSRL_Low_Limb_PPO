@@ -88,6 +88,18 @@ def _get_low_limb_cpg(env: ManagerBasedRLEnv) -> LowLimbCPG:
     return env.low_limb_cpg
 
 
+def _cpg_angles_to_robot_order(cpg_angles: torch.Tensor) -> torch.Tensor:
+    """将人体角度约定转换为机器人关节顺序和极性。
+
+    CPG 输入：  [左髋, 右髋, 左膝, 右膝]，人体屈曲为正。
+    机器人输出：[-左髋, 左膝, -右髋, 右膝]。
+    """
+    return torch.stack(
+        (-cpg_angles[:, 0], cpg_angles[:, 2], -cpg_angles[:, 1], cpg_angles[:, 3]),
+        dim=1,
+    )
+
+
 def _step_low_limb_cpg(env: ManagerBasedRLEnv, command_name: str) -> None:
     """每个环境步只推进一次新版 CPG，并刷新独立输出缓存。"""
     cpg = _get_low_limb_cpg(env)
@@ -101,9 +113,8 @@ def _step_low_limb_cpg(env: ManagerBasedRLEnv, command_name: str) -> None:
         ).flatten()
         if reset_env_ids.numel() > 0:
             cpg.reset(reset_env_ids)
-            env.low_limb_cpg_reference_buf[reset_env_ids] = cpg.angles[reset_env_ids][
-                :, (0, 2, 1, 3)
-            ]
+            reset_angles = _cpg_angles_to_robot_order(cpg.angles[reset_env_ids])
+            env.low_limb_cpg_reference_buf[reset_env_ids].copy_(reset_angles)
             env.low_limb_cpg_state_buf[reset_env_ids] = cpg.state[reset_env_ids]
             env.low_limb_cpg_reset_counter = step_counter
 
@@ -113,9 +124,7 @@ def _step_low_limb_cpg(env: ManagerBasedRLEnv, command_name: str) -> None:
     command = env.command_manager.get_command(command_name)
     cpg_angles = cpg.step(command[:, 0], env.step_dt)
 
-    # CPG 内部：[左髋, 右髋, 左膝, 右膝]
-    # 训练接口：[左髋, 左膝, 右髋, 右膝]
-    env.low_limb_cpg_reference_buf.copy_(cpg_angles[:, (0, 2, 1, 3)])
+    env.low_limb_cpg_reference_buf.copy_(_cpg_angles_to_robot_order(cpg_angles))
     env.low_limb_cpg_state_buf.copy_(cpg.state)
     env.low_limb_cpg_step_counter = step_counter
 
