@@ -94,8 +94,8 @@ class RhythmHopf:
         self.dtype = dtype
         self.mu = 1.0
         self.gamma = 20.0
-        self.frequency_coefficient = 0.923900
-        self.frequency_exponent = 0.363479
+        self.frequency_slope = 0.48749031
+        self.frequency_intercept = 0.60252246
 
         self.x = torch.empty(self.num_envs, device=self.device, dtype=dtype)
         self.y = torch.empty_like(self.x)
@@ -115,7 +115,7 @@ class RhythmHopf:
 
     def velocity_to_frequency(self, velocity: torch.Tensor) -> torch.Tensor:
         velocity = velocity.clamp_min(0.0)
-        frequency = 0.375634392 * velocity + 0.556391280
+        frequency = self.frequency_slope * velocity + self.frequency_intercept
         return torch.where(
             velocity > 0.0,
             frequency,
