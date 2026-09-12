@@ -114,8 +114,12 @@ class RhythmHopf:
         return self.omega / TWO_PI
 
     def velocity_to_frequency(self, velocity: torch.Tensor) -> torch.Tensor:
-        return self.frequency_coefficient * velocity.clamp_min(0.0).pow(
-            self.frequency_exponent
+        velocity = velocity.clamp_min(0.0)
+        frequency = 0.375634392 * velocity + 0.556391280
+        return torch.where(
+            velocity > 0.0,
+            frequency,
+            torch.zeros_like(frequency),
         )
 
     @torch.no_grad()
