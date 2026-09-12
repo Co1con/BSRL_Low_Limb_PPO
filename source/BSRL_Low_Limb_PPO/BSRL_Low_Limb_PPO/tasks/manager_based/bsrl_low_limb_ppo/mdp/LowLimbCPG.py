@@ -40,51 +40,6 @@ def _batch_tensor(value, num_envs: int, device, dtype, name: str) -> torch.Tenso
     return value.reshape(num_envs)
 
 
-class VelocityPlanner:
-    """为每个并行环境独立平滑目标速度。"""
-
-    def __init__(self, num_envs: int, device, dtype=torch.float32):
-        self.num_envs = int(num_envs)
-        self.device = torch.device(device)
-        self.dtype = dtype
-        self.response_rate = 6.0
-        self.velocity = torch.zeros(self.num_envs, device=self.device, dtype=dtype)
-        self.acceleration = torch.zeros_like(self.velocity)
-
-    @torch.no_grad()
-    def reset(self, env_ids=None, velocity=0.0) -> None:
-        ids = _env_ids(env_ids, self.num_envs, self.device)
-        if ids.numel() == 0:
-            return
-        reset_velocity = torch.as_tensor(velocity, device=self.device, dtype=self.dtype)
-        if reset_velocity.numel() == 1:
-            self.velocity[ids] = reset_velocity
-        elif reset_velocity.numel() == ids.numel():
-            self.velocity[ids] = reset_velocity.flatten()
-        else:
-            raise ValueError("velocity must contain 1 or len(env_ids) values")
-        self.acceleration[ids] = 0.0
-
-    @torch.no_grad()
-    def step(self, target_velocity: torch.Tensor, dt: float) -> torch.Tensor:
-        dt = _check_dt(dt)
-        target_velocity = _batch_tensor(
-            target_velocity, self.num_envs, self.device, self.dtype, "target_velocity"
-        )
-
-        # 临界阻尼二阶系统的精确离散解，速度过渡不会产生数值超调。
-        velocity_error = self.velocity - target_velocity
-        decay = math.exp(-self.response_rate * dt)
-        transient = self.acceleration + self.response_rate * velocity_error
-        next_error = (velocity_error + transient * dt) * decay
-
-        self.acceleration.copy_(
-            (self.acceleration - self.response_rate * transient * dt) * decay
-        )
-        self.velocity.copy_(target_velocity + next_error)
-        return self.velocity
-
-
 class RhythmHopf:
     """批量生成全局节律，并让各环境独立返回自己的 reset 相位。"""
 
@@ -319,10 +274,9 @@ class LowLimbCPG:
         self.dtype = dtype
         self.phase_speed_slope = -0.3307487167
         self.phase_speed_intercept = 5.2494736659
-        self.stop_speed = 0.02
         self.max_integration_dt = 0.005
 
-        self.velocity_planner = VelocityPlanner(num_envs, self.device, dtype)
+        self._velocity = torch.zeros(num_envs, device=self.device, dtype=dtype)
         self.rhythm = RhythmHopf(num_envs, self.device, dtype)
         self.joints = JointOscillator(num_envs, self.device, dtype)
         self.shaper = JointShaper(self.device, dtype)
@@ -337,7 +291,7 @@ class LowLimbCPG:
 
     @property
     def velocity(self) -> torch.Tensor:
-        return self.velocity_planner.velocity
+        return self._velocity
 
     @property
     def state(self) -> torch.Tensor:
@@ -372,20 +326,15 @@ class LowLimbCPG:
         ids = _env_ids(env_ids, self.num_envs, self.device)
         if ids.numel() == 0:
             return
-        self.velocity_planner.reset(ids)
+        self._velocity[ids] = 0.0
         self.rhythm.reset(ids)
         self.joints.reset(ids)
         self._update_phase_offsets(ids)
         self.angles[ids] = 0.0
 
     def _step_once(self, target_velocity: torch.Tensor, dt: float) -> None:
-        self.velocity_planner.step(target_velocity, dt)
-        rhythm_velocity = torch.where(
-            (target_velocity == 0.0) & (self.velocity < self.stop_speed),
-            torch.zeros_like(self.velocity),
-            self.velocity,
-        )
-        self.rhythm.step(rhythm_velocity, dt)
+        self._velocity.copy_(target_velocity)
+        self.rhythm.step(target_velocity, dt)
         self._update_phase_offsets()
         self.joints.step(
             self.rhythm.phase,
@@ -415,7 +364,6 @@ class LowLimbCPG:
 
 __all__ = [
     "JOINT_NAMES",
-    "VelocityPlanner",
     "RhythmHopf",
     "JointOscillator",
     "JointShaper",
