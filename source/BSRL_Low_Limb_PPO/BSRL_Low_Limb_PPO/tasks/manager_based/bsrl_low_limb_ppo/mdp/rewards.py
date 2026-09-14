@@ -267,6 +267,18 @@ def base_roll_l2(env: ManagerBasedRLEnv) -> torch.Tensor:
     return torch.square(asset.data.projected_gravity_b[:, 1])
 
 
+def base_roll_rate_l2(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """惩罚机体绕前进轴的角速度，减小左右摇晃。"""
+    asset: RigidObject = env.scene["robot"]
+    return torch.square(asset.data.root_ang_vel_b[:, 0])
+
+
+def base_lateral_velocity_l2(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """惩罚机体系侧向速度，不限制正常的前进运动。"""
+    asset: RigidObject = env.scene["robot"]
+    return torch.square(asset.data.root_lin_vel_b[:, 1])
+
+
 def hopf_joint_tracking(
     env: ManagerBasedRLEnv,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),

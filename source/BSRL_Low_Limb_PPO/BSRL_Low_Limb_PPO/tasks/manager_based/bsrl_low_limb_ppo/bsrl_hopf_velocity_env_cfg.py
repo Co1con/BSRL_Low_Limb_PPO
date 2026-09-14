@@ -106,6 +106,8 @@ class HopfRewardsCfg:
     alive = RewTerm(func=mdp.is_alive, weight=0.15)
     base_linear_velocity = RewTerm(func=mdp.lin_vel_z_l2, weight=-2.0)
     base_angular_velocity = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.10)
+    base_roll_rate = RewTerm(func=mdp.base_roll_rate_l2, weight=-0.5)
+    base_lateral_velocity = RewTerm(func=mdp.base_lateral_velocity_l2, weight=-1.5)
     flat_orientation_l2 = RewTerm(func=mdp.flat_orientation_l2, weight=-5.0)
     base_height = RewTerm(
         func=mdp.base_height_l2,
