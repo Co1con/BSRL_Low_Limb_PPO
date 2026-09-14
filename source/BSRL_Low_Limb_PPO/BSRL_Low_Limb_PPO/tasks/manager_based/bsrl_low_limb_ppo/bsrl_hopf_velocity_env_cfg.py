@@ -111,7 +111,7 @@ class HopfRewardsCfg:
         func=mdp.base_height_l2,
         weight=-10.0,
         params={
-            "target_height": BSRL_DEFAULT_ROOT_HEIGHT * 0.9,
+            "target_height": BSRL_DEFAULT_ROOT_HEIGHT,
             "asset_cfg": SceneEntityCfg("robot"),
             "sensor_cfg": SceneEntityCfg("height_scanner"),
         },
