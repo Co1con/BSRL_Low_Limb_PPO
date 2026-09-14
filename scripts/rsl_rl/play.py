@@ -78,6 +78,7 @@ from isaaclab.envs import (
     ManagerBasedRLEnvCfg,
     multi_agent_to_single_agent,
 )
+from isaaclab.managers import SceneEntityCfg
 from isaaclab.utils.assets import retrieve_file_path
 from isaaclab.utils.dict import print_dict
 
@@ -215,17 +216,40 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         "joint_right_hip_pitch",
         "joint_right_knee_pitch",
     ]
+    log_roll_joint_names = [
+        "joint_left_hip_roll",
+        "joint_right_hip_roll",
+        "joint_left_ankle_roll",
+        "joint_right_ankle_roll",
+    ]
 
     obs_logger = None
     log_action_term = None
     log_joint_ids = None
     log_robot = None
     log_actual_joint_ids = None
+    log_roll_action_ids = None
+    log_roll_actual_ids = None
+    log_contact_sensor = None
+    log_foot_ids = None
     if args_cli.log_obs_trajectories:
         log_obs_path = args_cli.log_obs_path
         if log_obs_path is None:
             log_obs_path = os.path.join(log_dir, "obs_trajectories.csv")
         log_labels = [
+            "episode_step",
+            "cmd_vx_mps", "cmd_vy_mps", "cmd_yaw_rps",
+            "base_vx_mps", "base_vy_mps", "base_vz_mps",
+            "base_roll_rad", "base_roll_rate_rps", "base_pitch_rate_rps", "base_yaw_rate_rps",
+            "base_height_m",
+            "rhythm_x", "rhythm_y",
+            "left_foot_contact", "right_foot_contact",
+            "left_foot_fz_n", "right_foot_fz_n",
+            "left_foot_force_n", "right_foot_force_n",
+            "left_hip_roll_target", "right_hip_roll_target",
+            "left_ankle_roll_target", "right_ankle_roll_target",
+            "left_hip_roll_actual", "right_hip_roll_actual",
+            "left_ankle_roll_actual", "right_ankle_roll_actual",
             "left_hip_ref",
             "left_knee_ref",
             "right_hip_ref",
@@ -254,6 +278,14 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         log_joint_ids = _get_joint_ids(log_action_term, log_joint_names)
         log_robot = env.unwrapped.scene["robot"]
         log_actual_joint_ids = [log_robot.data.joint_names.index(name) for name in log_joint_names]
+        log_roll_action_ids = _get_joint_ids(log_action_term, log_roll_joint_names)
+        log_roll_actual_ids = [log_robot.data.joint_names.index(name) for name in log_roll_joint_names]
+        log_contact_sensor = env.unwrapped.scene.sensors["contact_forces"]
+        log_foot_ids = []
+        for foot_name in ("link_left_ankle_roll", "link_right_ankle_roll"):
+            foot_cfg = SceneEntityCfg("contact_forces", body_names=[foot_name])
+            foot_cfg.resolve(env.unwrapped.scene)
+            log_foot_ids.append(foot_cfg.body_ids[0])
         print(f"[INFO] Logging observation trajectories to: {log_obs_path}")
 
     # reset environment
@@ -272,16 +304,45 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
             # reset recurrent states for episodes that have terminated
             policy_nn.reset(dones)
             play_step += 1
-            if obs_logger is not None:
+            # Reset 帧中的关节状态已经属于新 episode，不能与上一帧动作配对。
+            if obs_logger is not None and not torch.any(dones[obs_logger.env_id]):
                 q_target_all = _get_processed_actions(log_action_term)
 
                 q_hopf_4 = env.unwrapped.low_limb_cpg_reference_buf
                 q_target_4 = q_target_all[:, log_joint_ids]
                 q_action_4 = actions[:, log_joint_ids]
                 q_actual_4 = log_robot.data.joint_pos[:, log_actual_joint_ids]
+                q_roll_target = q_target_all[:, log_roll_action_ids]
+                q_roll_actual = log_robot.data.joint_pos[:, log_roll_actual_ids]
+
+                command = env.unwrapped.command_manager.get_command("base_velocity")
+                gravity = log_robot.data.projected_gravity_b
+                roll = torch.atan2(-gravity[:, 1], -gravity[:, 2]).unsqueeze(1)
+                base_vel = log_robot.data.root_lin_vel_b
+                base_rate = log_robot.data.root_ang_vel_b
+                height = log_robot.data.root_pos_w[:, 2:3]
+                rhythm = torch.stack(
+                    (env.unwrapped.low_limb_cpg.rhythm.x, env.unwrapped.low_limb_cpg.rhythm.y), dim=1
+                )
+                foot_force = log_contact_sensor.data.net_forces_w[:, log_foot_ids, :]
+                foot_force_norm = torch.linalg.norm(foot_force, dim=2)
+                foot_contact = (foot_force_norm > 1.0).to(dtype=base_vel.dtype)
+                episode_step = env.unwrapped.episode_length_buf.unsqueeze(1).to(dtype=base_vel.dtype)
 
                 log_values = torch.cat(
                     [
+                        episode_step,
+                        command,
+                        base_vel,
+                        roll,
+                        base_rate,
+                        height,
+                        rhythm,
+                        foot_contact,
+                        foot_force[:, :, 2].abs(),
+                        foot_force_norm,
+                        q_roll_target,
+                        q_roll_actual,
                         q_hopf_4,
                         q_target_4,
                         q_action_4,
