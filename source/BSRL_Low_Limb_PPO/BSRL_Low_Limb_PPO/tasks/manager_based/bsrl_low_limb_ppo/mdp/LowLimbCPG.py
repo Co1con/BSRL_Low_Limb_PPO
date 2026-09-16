@@ -82,8 +82,8 @@ class RhythmHopf:
         ids = _env_ids(env_ids, self.num_envs, self.device)
         if ids.numel() == 0:
             return
-        choice = torch.randint(0, 2, (ids.numel(),), device=self.device)
-        self.reset_phase[ids] = choice.to(self.dtype) * math.pi
+        # 静止时统一使用规范相位；起步腿在收到正速度命令时再随机选择。
+        self.reset_phase[ids] = 0.0
         radius = math.sqrt(self.mu)
         self.x[ids] = radius * torch.cos(self.reset_phase[ids])
         self.y[ids] = radius * torch.sin(self.reset_phase[ids])
@@ -92,12 +92,24 @@ class RhythmHopf:
         self.stop_requested[ids] = False
 
     @torch.no_grad()
+    def _prepare_start(self, starting: torch.Tensor) -> None:
+        ids = torch.nonzero(starting, as_tuple=False).flatten()
+        if ids.numel() == 0:
+            return
+        choice = torch.randint(0, 2, (ids.numel(),), device=self.device)
+        self.reset_phase[ids] = choice.to(self.dtype) * math.pi
+        radius = math.sqrt(self.mu)
+        self.x[ids] = radius * torch.cos(self.reset_phase[ids])
+        self.y[ids] = radius * torch.sin(self.reset_phase[ids])
+
+    @torch.no_grad()
     def step(self, velocity: torch.Tensor, dt: float) -> tuple[torch.Tensor, torch.Tensor]:
         dt = _check_dt(dt)
         velocity = _batch_tensor(
             velocity, self.num_envs, self.device, self.dtype, "velocity"
         )
         moving = velocity > 0.0
+        self._prepare_start(moving & ~self.is_running)
 
         commanded_omega = TWO_PI * self.velocity_to_frequency(velocity)
         self.omega.copy_(torch.where(moving, commanded_omega, self.omega))
@@ -275,6 +287,8 @@ class LowLimbCPG:
         self.phase_speed_slope = -0.3307487167
         self.phase_speed_intercept = 5.2494736659
         self.max_integration_dt = 0.005
+        self.start_transition_time = 0.3
+        self.stop_transition_time = 0.3
 
         self._velocity = torch.zeros(num_envs, device=self.device, dtype=dtype)
         self.rhythm = RhythmHopf(num_envs, self.device, dtype)
@@ -286,7 +300,12 @@ class LowLimbCPG:
         self.phase_offsets = torch.empty(
             num_envs, len(JOINT_NAMES), device=self.device, dtype=dtype
         )
-        self.angles = torch.zeros_like(self.phase_offsets)
+        self.standing_angles = torch.tensor(
+            (0.1, 0.1, 0.2, 0.2), device=self.device, dtype=dtype
+        )
+        self.motion_blend = torch.zeros(num_envs, device=self.device, dtype=dtype)
+        self.gait_angles = self.standing_angles.unsqueeze(0).expand(num_envs, -1).clone()
+        self.angles = self.gait_angles.clone()
         self._update_phase_offsets()
 
     @property
@@ -327,22 +346,41 @@ class LowLimbCPG:
         if ids.numel() == 0:
             return
         self._velocity[ids] = 0.0
+        self.motion_blend[ids] = 0.0
         self.rhythm.reset(ids)
         self.joints.reset(ids)
         self._update_phase_offsets(ids)
-        self.angles[ids] = 0.0
+        self.gait_angles[ids] = self.standing_angles
+        self.angles[ids] = self.standing_angles
+
+    def _update_motion_blend(self, moving: torch.Tensor, dt: float) -> None:
+        start_step = dt / self.start_transition_time
+        stop_step = dt / self.stop_transition_time
+        self.motion_blend.copy_(torch.where(
+            moving,
+            (self.motion_blend + start_step).clamp_max(1.0),
+            (self.motion_blend - stop_step).clamp_min(0.0),
+        ))
 
     def _step_once(self, target_velocity: torch.Tensor, dt: float) -> None:
         self._velocity.copy_(target_velocity)
+        moving = target_velocity > 0.0
+        starting = moving & ~self.rhythm.is_running
         self.rhythm.step(target_velocity, dt)
+        self._update_motion_blend(moving, dt)
         self._update_phase_offsets()
+        self.joints.reset(torch.nonzero(starting, as_tuple=False).flatten())
         self.joints.step(
             self.rhythm.phase,
             self.rhythm.frequency,
             self.phase_offsets,
             dt,
         )
-        self.angles.copy_(self.shaper.step(self.joints.phase))
+        self.gait_angles.copy_(self.shaper.step(self.joints.phase))
+        self.angles.copy_(
+            self.standing_angles
+            + self.motion_blend[:, None] * (self.gait_angles - self.standing_angles)
+        )
 
     @torch.no_grad()
     def step(self, target_velocity: torch.Tensor, dt: float) -> torch.Tensor:
