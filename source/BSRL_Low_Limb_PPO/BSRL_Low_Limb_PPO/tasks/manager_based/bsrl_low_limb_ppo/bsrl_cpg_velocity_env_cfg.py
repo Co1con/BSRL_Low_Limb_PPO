@@ -75,7 +75,7 @@ class CPGCommandsCfg:
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.UniformLevelVelocityCommandCfg.Ranges(
-            lin_vel_x=(0.3, 0.5), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.5, 0.5)
+            lin_vel_x=(0.0, 0.0), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.0, 0.0)
         ),
         limit_ranges=mdp.UniformLevelVelocityCommandCfg.Ranges(
             lin_vel_x=(0.0, 1.5), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.5, 0.5)
@@ -106,8 +106,6 @@ class CPGRewardsCfg:
     alive = RewTerm(func=mdp.is_alive, weight=0.15)
     base_linear_velocity = RewTerm(func=mdp.lin_vel_z_l2, weight=-2.0)
     base_angular_velocity = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.10)
-    base_roll_rate = RewTerm(func=mdp.base_roll_rate_l2, weight=-0.5)
-    base_lateral_velocity = RewTerm(func=mdp.base_lateral_velocity_l2, weight=-1.5)
     flat_orientation_l2 = RewTerm(func=mdp.flat_orientation_l2, weight=-5.0)
     base_height = RewTerm(
         func=mdp.base_height_l2,
@@ -143,6 +141,8 @@ class CPGRewardsCfg:
     )
 
     base_roll = RewTerm(func=mdp.base_roll_l2, weight=-2.0)
+    base_roll_rate = RewTerm(func=mdp.base_roll_rate_l2, weight=-0.5)
+    base_lateral_velocity = RewTerm(func=mdp.base_lateral_velocity_l2, weight=-1.5)
 
     # Feet
     feet_double_support = RewTerm(
@@ -267,7 +267,7 @@ class CPGEventCfg:
 class CPGCurriculumCfg:
     # terrain_levels = CurrTerm(func=mdp.terrain_levels_vel)
     lin_vel_cmd_levels = CurrTerm(mdp.lin_vel_cmd_levels)
-
+    ang_vel_cmd_levels = CurrTerm(mdp.ang_vel_cmd_levels)
 
 @configclass
 class RobotCPGEnvCfg(RobotEnvCfg):
