@@ -308,7 +308,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
             if obs_logger is not None and not torch.any(dones[obs_logger.env_id]):
                 q_target_all = _get_processed_actions(log_action_term)
 
-                q_hopf_4 = env.unwrapped.low_limb_cpg_reference_buf
+                q_cpg_4 = env.unwrapped.low_limb_cpg_reference_buf
                 q_target_4 = q_target_all[:, log_joint_ids]
                 q_action_4 = actions[:, log_joint_ids]
                 q_actual_4 = log_robot.data.joint_pos[:, log_actual_joint_ids]
@@ -343,7 +343,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
                         foot_force_norm,
                         q_roll_target,
                         q_roll_actual,
-                        q_hopf_4,
+                        q_cpg_4,
                         q_target_4,
                         q_action_4,
                         q_actual_4,

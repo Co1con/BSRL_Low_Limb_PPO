@@ -42,23 +42,23 @@ gym.register(
     },
 )
 
-# hopf —— reward constraint
+# CPG —— reward constraint
 gym.register(
-    id="bsrl-hopf-velocity-train",
+    id="bsrl-cpg-velocity-train",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.bsrl_hopf_velocity_env_cfg:RobotHopfEnvCfg",
+        "env_cfg_entry_point": f"{__name__}.bsrl_cpg_velocity_env_cfg:RobotCPGEnvCfg",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:PPORunnerCfg",
     },
 )
 
 gym.register(
-    id="bsrl-hopf-velocity-play",
+    id="bsrl-cpg-velocity-play",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.bsrl_hopf_velocity_env_cfg:RobotHopfPlayEnvCfg",
+        "env_cfg_entry_point": f"{__name__}.bsrl_cpg_velocity_env_cfg:RobotCPGPlayEnvCfg",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:PPORunnerCfg",
     },
 )

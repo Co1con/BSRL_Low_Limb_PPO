@@ -137,21 +137,21 @@ Some examples of packages that can likely be excluded are:
 ## Command
 ### test:
 ```
-python scripts/zero_agent.py --task=bsrl-hopf-velocity-play
+python scripts/zero_agent.py --task=bsrl-cpg-velocity-play
 
-python scripts/random_agent.py --task=bsrl-hopf-velocity-play
+python scripts/random_agent.py --task=bsrl-cpg-velocity-play
 ```
 
 ### train:
 ```
-python scripts/rsl_rl/train.py --task=bsrl-hopf-velocity-train --num_envs=8192 --max_iterations=10000 --run_name=hopf_<version> --headless --video
+python scripts/rsl_rl/train.py --task=bsrl-cpg-velocity-train --num_envs=8192 --max_iterations=10000 --run_name=cpg_<version> --headless --video
 
-python scripts/rsl_rl/train.py --task=bsrl-hopf-velocity-train --num_envs=8192 --max_iterations=10000 --run_name=hopf_<version> --headless --video --resume --load_run=<last run dir name> --checkpoint=<checkpoint doc name>
+python scripts/rsl_rl/train.py --task=bsrl-cpg-velocity-train --num_envs=8192 --max_iterations=10000 --run_name=cpg_<version> --headless --video --resume --load_run=<last run dir name> --checkpoint=<checkpoint doc name>
 ```
 
 ### play:
 ```
-python scripts/rsl_rl/play.py --task=bsrl-hopf-velocity-play --num_envs=1 --log_obs_trajectories --log_obs_path logs/hopf_obs.csv
+python scripts/rsl_rl/play.py --task=bsrl-cpg-velocity-play --num_envs=1 --log_obs_trajectories --log_obs_path logs/cpg_obs.csv
 ```
 
 ### tensorboard

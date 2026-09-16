@@ -20,7 +20,7 @@ BSRL_FOOT_NAME = ["link_left_ankle_roll", "link_right_ankle_roll"]
 
 
 @configclass
-class HopfObservationsCfg:
+class CPGObservationsCfg:
     @configclass
     class PolicyCfg(ObsGroup):
         base_ang_vel = ObsTerm(func=mdp.base_ang_vel, scale=0.2, noise=Unoise(n_min=-0.2, n_max=0.2))
@@ -31,7 +31,7 @@ class HopfObservationsCfg:
         joint_effort = ObsTerm(func=mdp.joint_effort, scale=0.01)
         last_action = ObsTerm(func=mdp.last_action)
 
-        rhythm_hopf_xy = ObsTerm(func=mdp.rhythm_hopf_xy, params={"command_name": "base_velocity"})
+        rhythm_cpg_xy = ObsTerm(func=mdp.rhythm_cpg_xy, params={"command_name": "base_velocity"})
 
         def __post_init__(self):
             # self.history_length = 5
@@ -56,7 +56,7 @@ class HopfObservationsCfg:
             clip=(-1.0, 5.0),
         )
 
-        rhythm_hopf_xy = ObsTerm(func=mdp.rhythm_hopf_xy, params={"command_name": "base_velocity"})
+        rhythm_cpg_xy = ObsTerm(func=mdp.rhythm_cpg_xy, params={"command_name": "base_velocity"})
 
         # def __post_init__(self):
         #     self.history_length = 5
@@ -65,7 +65,7 @@ class HopfObservationsCfg:
 
 
 @configclass
-class HopfCommandsCfg:
+class CPGCommandsCfg:
     base_velocity = mdp.UniformLevelVelocityCommandCfg(
         asset_name="robot",
         resampling_time_range=(10.0, 10.0),
@@ -84,12 +84,12 @@ class HopfCommandsCfg:
 
 
 @configclass
-class HopfActionsCfg:
+class CPGActionsCfg:
     joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.25, use_default_offset=True)
 
 
 @configclass
-class HopfRewardsCfg:
+class CPGRewardsCfg:
     # Task
     track_lin_vel_xy = RewTerm(
         func=mdp.track_lin_vel_xy_exp,
@@ -131,8 +131,8 @@ class HopfRewardsCfg:
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=["joint_.*_hip_roll", "joint_.*_hip_yaw"])},
     )
 
-    # hopf-constraint
-    CPG_tracking = RewTerm(
+    # cpg-constraint
+    cpg_tracking = RewTerm(
         func=mdp.cpg_joint_tracking,
         weight=0.5,
         params={
@@ -183,7 +183,7 @@ class HopfRewardsCfg:
 
 
 @configclass
-class HopfEventCfg:
+class CPGEventCfg:
     ## startup
     # 随机化材质
     physics_material = EventTerm(
@@ -264,25 +264,25 @@ class HopfEventCfg:
 
 
 @configclass
-class HopfCurriculumCfg:
+class CPGCurriculumCfg:
     # terrain_levels = CurrTerm(func=mdp.terrain_levels_vel)
     lin_vel_cmd_levels = CurrTerm(mdp.lin_vel_cmd_levels)
 
 
 @configclass
-class RobotHopfEnvCfg(RobotEnvCfg):
+class RobotCPGEnvCfg(RobotEnvCfg):
     # 观测、动作、指令配置
-    observations: HopfObservationsCfg = HopfObservationsCfg()
-    commands: HopfCommandsCfg = HopfCommandsCfg()
-    actions: HopfActionsCfg = HopfActionsCfg()
+    observations: CPGObservationsCfg = CPGObservationsCfg()
+    commands: CPGCommandsCfg = CPGCommandsCfg()
+    actions: CPGActionsCfg = CPGActionsCfg()
     # MDP相关配置
-    rewards: HopfRewardsCfg = HopfRewardsCfg()
-    events: HopfEventCfg = HopfEventCfg()
-    curriculum: HopfCurriculumCfg = HopfCurriculumCfg()
+    rewards: CPGRewardsCfg = CPGRewardsCfg()
+    events: CPGEventCfg = CPGEventCfg()
+    curriculum: CPGCurriculumCfg = CPGCurriculumCfg()
 
 
 @configclass
-class RobotHopfPlayEnvCfg(RobotHopfEnvCfg):
+class RobotCPGPlayEnvCfg(RobotCPGEnvCfg):
     def __post_init__(self):
         super().__post_init__()
         self.scene.num_envs = 1

@@ -19,7 +19,6 @@ from isaaclab.sensors import ContactSensor
 from isaaclab.utils.math import wrap_to_pi
 
 from .observations import (  # pyright: ignore[reportPrivateUsage]
-    _step_hopf_generator,
     _step_low_limb_cpg,
 )
 
@@ -277,38 +276,6 @@ def base_lateral_velocity_l2(env: ManagerBasedRLEnv) -> torch.Tensor:
     """惩罚机体系侧向速度，不限制正常的前进运动。"""
     asset: RigidObject = env.scene["robot"]
     return torch.square(asset.data.root_lin_vel_b[:, 1])
-
-
-def hopf_joint_tracking(
-    env: ManagerBasedRLEnv,
-    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-    command_name: str = "base_velocity",
-    command_threshold: float = 0.1,
-) -> torch.Tensor:
-    asset: Articulation = env.scene[asset_cfg.name]
-
-    joint_names = [
-        "joint_left_hip_pitch",
-        "joint_left_knee_pitch",
-        "joint_right_hip_pitch",
-        "joint_right_knee_pitch",
-    ]
-    joint_ids = [asset.data.joint_names.index(name) for name in joint_names]
-
-    _step_hopf_generator(env, command_name)
-    q_ref = env.hopf_reference_buf
-    q_actual = asset.data.joint_pos[:, joint_ids]
-
-    # command = env.command_manager.get_command(command_name)
-    # is_moving_cmd = torch.norm(command[:, :2], dim=1) > command_threshold
-
-    joint_stds = torch.tensor([0.2, 0.1, 0.2, 0.1], device=env.device)
-    reward = torch.sum(torch.exp(-torch.square(q_actual - q_ref) / joint_stds), dim=1)
-
-    return reward
-
-
-# =========================== 新版 LowLimbCPG ===========================
 
 
 def cpg_joint_tracking(
