@@ -92,11 +92,11 @@ def low_limb_cpg_state(
     return env.low_limb_cpg_state_buf
 
 
-def rhythm_hopf_xy(
+def rhythm_cpg_xy(
     env: ManagerBasedRLEnv,
     command_name: str = "base_velocity",
 ) -> torch.Tensor:
-    """读取新版 RhythmHopf 的 x、y，形状为 ``[num_envs, 2]``。"""
+    """读取新版 RhythmCPG 的 x、y，形状为 ``[num_envs, 2]``。"""
     _step_low_limb_cpg(env, command_name)
     rhythm = env.low_limb_cpg.rhythm
     return torch.stack((rhythm.x, rhythm.y), dim=1)
