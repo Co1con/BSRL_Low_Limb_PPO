@@ -283,16 +283,16 @@ def cpg_joint_tracking(
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
     command_name: str = "base_velocity",
     command_threshold: float = 0.1,
-) -> torch.Tensor:
-    """奖励实际髋膝角对新版 LowLimbCPG 参考角的跟踪。"""
-    asset: Articulation = env.scene[asset_cfg.name]
-
-    joint_names = [
+    joint_names: tuple[str, str, str, str] = (
         "joint_left_hip_pitch",
         "joint_left_knee_pitch",
         "joint_right_hip_pitch",
         "joint_right_knee_pitch",
-    ]
+    ),
+) -> torch.Tensor:
+    """奖励实际髋膝角对新版 LowLimbCPG 参考角的跟踪。"""
+    asset: Articulation = env.scene[asset_cfg.name]
+
     joint_ids = [asset.data.joint_names.index(name) for name in joint_names]
 
     _step_low_limb_cpg(env, command_name)

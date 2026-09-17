@@ -146,6 +146,9 @@ python scripts/random_agent.py --task=bsrl-cpg-velocity-play
 ```
 python scripts/rsl_rl/train.py --task=bsrl-cpg-velocity-train --num_envs=8192 --max_iterations=10000 --run_name=cpg_<version> --headless --video
 
+# G1 29DoF CPG training
+python scripts/rsl_rl/train.py --task=g1-29dof-cpg-velocity-train --num_envs=4096 --max_iterations=10000 --headless
+
 python scripts/rsl_rl/train.py --task=bsrl-cpg-velocity-train --num_envs=8192 --max_iterations=10000 --run_name=cpg_<version> --headless --video --resume --load_run=<last run dir name> --checkpoint=<checkpoint doc name>
 ```
 
