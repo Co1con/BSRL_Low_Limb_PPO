@@ -7,6 +7,7 @@ from isaaclab.utils import configclass
 from BSRL_Low_Limb_PPO.assets.BSRL.delayed_implicit_actuator import DelayedPowerLimitedPDActuatorCfg
 
 BSRL_MODEL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "bsrl"))
+BSRL_URDF_PATH = f"{BSRL_MODEL_DIR}/urdf/export.urdf"
 
 BSRL_DEFAULT_ROOT_HEIGHT = 0.8665
 
@@ -34,12 +35,15 @@ BSRL_ACTION_SCALE_MULTIPLIER = {
 @configclass
 class BSRLArticulationCfg(ArticulationCfg):
     joint_sdk_names: list[str] = None
-    soft_joint_pos_limit_factor = 0.98
+    soft_joint_pos_limit_factor = 0.9
 
 
 BSRL_CFG = BSRLArticulationCfg(
-    spawn=sim_utils.UsdFileCfg(
-        usd_path=f"{BSRL_MODEL_DIR}/urdf/export/export.usd",
+    spawn=sim_utils.UrdfFileCfg(
+        asset_path=BSRL_URDF_PATH,
+        fix_base=False,
+        merge_fixed_joints=False,
+        replace_cylinders_with_capsules=False,
         activate_contact_sensors=True,
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
@@ -54,6 +58,9 @@ BSRL_CFG = BSRLArticulationCfg(
             enabled_self_collisions=True,
             solver_position_iteration_count=8,
             solver_velocity_iteration_count=4,
+        ),
+        joint_drive=sim_utils.UrdfConverterCfg.JointDriveCfg(
+            gains=sim_utils.UrdfConverterCfg.JointDriveCfg.PDGainsCfg(stiffness=0, damping=0)
         ),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
@@ -84,12 +91,12 @@ BSRL_CFG = BSRLArticulationCfg(
             peak_power=BSRL_LARGE_MOTOR_PEAK_POWER,
             armature=0.01,
             stiffness={
-                "joint_.*_hip_pitch": 100,
+                "joint_.*_hip_pitch": 150,
                 "joint_.*_hip_roll": 100,
-                "joint_.*_knee_pitch": 150,
+                "joint_.*_knee_pitch": 200,
             },
             damping={
-                "joint_.*_hip_pitch": 2,
+                "joint_.*_hip_pitch": 3,
                 "joint_.*_hip_roll": 2,
                 "joint_.*_knee_pitch": 4,
             },
@@ -110,13 +117,13 @@ BSRL_CFG = BSRLArticulationCfg(
             armature=0.01,
             stiffness={
                 "joint_.*_hip_yaw": 100,
-                "joint_.*_ankle_roll": 40,
-                "joint_.*_ankle_pitch": 40,
+                "joint_.*_ankle_roll": 100,
+                "joint_.*_ankle_pitch": 100,
             },
             damping={
                 "joint_.*_hip_yaw": 2,
-                "joint_.*_ankle_roll": 2,
-                "joint_.*_ankle_pitch": 2,
+                "joint_.*_ankle_roll": 3,
+                "joint_.*_ankle_pitch": 3,
             },
         ),
     },
