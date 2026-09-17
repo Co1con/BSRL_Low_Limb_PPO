@@ -10,7 +10,7 @@ from isaaclab.managers import SceneEntityCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 
-from BSRL_Low_Limb_PPO.assets.bsrl import BSRL_CFG, BSRL_DEFAULT_ROOT_HEIGHT
+from BSRL_Low_Limb_PPO.assets.BSRL.bsrl import BSRL_CFG, BSRL_DEFAULT_ROOT_HEIGHT
 from BSRL_Low_Limb_PPO.tasks.manager_based.bsrl_low_limb_ppo import mdp
 
 from BSRL_Low_Limb_PPO.tasks.manager_based.bsrl_low_limb_ppo.bsrl_baseline_velocity_env_cfg import RobotEnvCfg

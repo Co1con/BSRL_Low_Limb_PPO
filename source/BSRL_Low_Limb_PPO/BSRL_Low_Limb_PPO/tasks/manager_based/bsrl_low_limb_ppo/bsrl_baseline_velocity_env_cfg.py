@@ -18,7 +18,7 @@ from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR  # noqa: F401
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 
-from BSRL_Low_Limb_PPO.assets.bsrl import BSRL_CFG, BSRL_DEFAULT_ROOT_HEIGHT
+from BSRL_Low_Limb_PPO.assets.BSRL.bsrl import BSRL_CFG, BSRL_DEFAULT_ROOT_HEIGHT
 from BSRL_Low_Limb_PPO.tasks.manager_based.bsrl_low_limb_ppo import mdp
 
 COBBLESTONE_ROAD_CFG = terrain_gen.TerrainGeneratorCfg(

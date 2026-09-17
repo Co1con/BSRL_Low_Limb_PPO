@@ -4,7 +4,7 @@ import isaaclab.sim as sim_utils
 from isaaclab.assets.articulation import ArticulationCfg
 from isaaclab.utils import configclass
 
-from BSRL_Low_Limb_PPO.assets.delayed_implicit_actuator import DelayedPowerLimitedPDActuatorCfg
+from BSRL_Low_Limb_PPO.assets.BSRL.delayed_implicit_actuator import DelayedPowerLimitedPDActuatorCfg
 
 BSRL_MODEL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "bsrl"))
 
