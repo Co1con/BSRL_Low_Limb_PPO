@@ -249,10 +249,6 @@ class G1CPGRewardsCfg:
 class G1CPGTerminationsCfg:
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
     base_height = DoneTerm(func=mdp.root_height_below_minimum, params={"minimum_height": 0.2})
-    base_contact = DoneTerm(
-        func=mdp.illegal_contact,
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="torso_link"), "threshold": 1.0},
-    )
     bad_orientation = DoneTerm(func=mdp.bad_orientation, params={"limit_angle": 0.8})
 
 
@@ -326,7 +322,8 @@ class G1CPGCurriculumCfg:
 
 
 @configclass
-class G1CPGEnvCfg(ManagerBasedRLEnvCfg):    
+class G1CPGEnvCfg(ManagerBasedRLEnvCfg):
+    scene: G1RobotSceneCfg = G1RobotSceneCfg(num_envs=4096, env_spacing=2.5)
     observations: G1CPGObservationsCfg = G1CPGObservationsCfg()
     commands: G1CPGCommandsCfg = G1CPGCommandsCfg()
     actions: G1CPGActionsCfg = G1CPGActionsCfg()
@@ -334,6 +331,17 @@ class G1CPGEnvCfg(ManagerBasedRLEnvCfg):
     terminations: G1CPGTerminationsCfg = G1CPGTerminationsCfg()
     events: G1CPGEventsCfg = G1CPGEventsCfg()
     curriculum: G1CPGCurriculumCfg = G1CPGCurriculumCfg()
+
+    def __post_init__(self):
+        self.decimation = 4
+        self.episode_length_s = 20.0
+        self.sim.dt = 0.005
+        self.sim.render_interval = self.decimation
+        self.sim.physics_material = self.scene.terrain.physics_material
+        self.sim.physx.gpu_max_rigid_patch_count = 10 * 2**15
+        self.scene.contact_forces.update_period = self.sim.dt
+        self.scene.height_scanner.update_period = self.decimation * self.sim.dt
+
 
 @configclass
 class G1CPGPlayEnvCfg(G1CPGEnvCfg):
