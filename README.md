@@ -144,17 +144,25 @@ python scripts/random_agent.py --task=bsrl-cpg-velocity-play
 
 ### train:
 ```
-python scripts/rsl_rl/train.py --task=bsrl-cpg-velocity-train --num_envs=8192 --max_iterations=10000 --run_name=cpg_<version> --headless --video
+# BSRL CPG training
+python scripts/rsl_rl/train.py --task=bsrl-cpg-velocity-train --num_envs=4096 --max_iterations=5000 --run_name=bsrl_cpg_<version> --headless --video
+
+python scripts/rsl_rl/train.py --task=bsrl-cpg-velocity-train --num_envs=4096 --max_iterations=5000 --run_name=bsrl_cpg_<version> --headless --video --resume --load_run=<last run dir name> --checkpoint=<checkpoint doc name>
 
 # G1 29DoF CPG training
-python scripts/rsl_rl/train.py --task=g1-29dof-cpg-velocity-train --num_envs=4096 --max_iterations=10000 --headless
+python scripts/rsl_rl/train.py --task=g1-29dof-cpg-velocity-train --num_envs=4096 --max_iterations=5000 --run_name=g1_29dof_cpg_<version> --headless --video
 
-python scripts/rsl_rl/train.py --task=bsrl-cpg-velocity-train --num_envs=8192 --max_iterations=10000 --run_name=cpg_<version> --headless --video --resume --load_run=<last run dir name> --checkpoint=<checkpoint doc name>
+python scripts/rsl_rl/train.py --task=g1-29dof-cpg-velocity-train --num_envs=4096 --max_iterations=5000 --run_name=g1_29dof_cpg_<version> --headless --video --resume --load_run=<last run dir name> --checkpoint=<checkpoint doc name>
 ```
 
 ### play:
 ```
-python scripts/rsl_rl/play.py --task=bsrl-cpg-velocity-play --num_envs=1 --log_obs_trajectories --log_obs_path logs/cpg_obs.csv
+# BSRL CPG playing
+python scripts/rsl_rl/play.py --task=bsrl-cpg-velocity-play --num_envs=16
+python scripts/rsl_rl/play.py --task=bsrl-cpg-velocity-play --num_envs=16 --log_obs_trajectories --log_obs_path logs/cpg_obs.csv
+
+# G1 29DoF CPG playing
+python scripts/rsl_rl/play.py --task=g1-29dof-cpg-velocity-play --num_envs=16
 ```
 
 ### tensorboard

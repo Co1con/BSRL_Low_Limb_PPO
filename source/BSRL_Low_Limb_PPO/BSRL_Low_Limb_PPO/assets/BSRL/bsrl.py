@@ -35,7 +35,7 @@ BSRL_ACTION_SCALE_MULTIPLIER = {
 @configclass
 class BSRLArticulationCfg(ArticulationCfg):
     joint_sdk_names: list[str] = None
-    soft_joint_pos_limit_factor = 0.9
+    soft_joint_pos_limit_factor = 0.95
 
 
 BSRL_CFG = BSRLArticulationCfg(
