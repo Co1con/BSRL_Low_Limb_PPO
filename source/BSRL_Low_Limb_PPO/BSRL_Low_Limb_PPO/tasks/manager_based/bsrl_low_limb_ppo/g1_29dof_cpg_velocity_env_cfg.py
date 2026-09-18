@@ -24,6 +24,7 @@ from BSRL_Low_Limb_PPO.tasks.manager_based.bsrl_low_limb_ppo import mdp
 
 
 G1_FOOT_NAMES = ["left_ankle_roll_link", "right_ankle_roll_link"]
+G1_ARM_JOINT_NAMES = [".*_shoulder_.*_joint", ".*_elbow_joint", ".*_wrist_.*_joint"]
 G1_CPG_JOINT_NAMES = (
     "left_hip_pitch_joint",
     "left_knee_joint",
@@ -120,10 +121,10 @@ class G1CPGCommandsCfg:
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.UniformLevelVelocityCommandCfg.Ranges(
-            lin_vel_x=(0.0, 0.3), lin_vel_y=(0.0, 0.0), ang_vel_z=(0.0, 0.0)
+            lin_vel_x=(0.0, 0.0), lin_vel_y=(0.0, 0.0), ang_vel_z=(0.0, 0.0)
         ),
         limit_ranges=mdp.UniformLevelVelocityCommandCfg.Ranges(
-            lin_vel_x=(0.0, 1.5), lin_vel_y=(0.0, 0.0), ang_vel_z=(-0.3, 0.3)
+            lin_vel_x=(0.0, 1.5), lin_vel_y=(0.0, 0.0), ang_vel_z=(-0.5, 0.5)
         ),
     )
 
@@ -175,12 +176,8 @@ class G1CPGRewardsCfg:
     )
     joint_deviation_arms = RewTerm(
         func=mdp.joint_deviation_l1,
-        weight=-0.1,
-        params={
-            "asset_cfg": SceneEntityCfg(
-                "robot", joint_names=[".*_shoulder_.*_joint", ".*_elbow_joint", ".*_wrist_.*_joint"]
-            )
-        },
+        weight=-0.15,
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=G1_ARM_JOINT_NAMES)},
     )
     joint_deviation_waist = RewTerm(
         func=mdp.joint_deviation_l1,
@@ -198,6 +195,16 @@ class G1CPGRewardsCfg:
             "command_name": "base_velocity",
             "command_threshold": 0.05,
             "joint_names": G1_CPG_JOINT_NAMES,
+        },
+    )
+    G1_shoulder_coordination = RewTerm(
+        func=mdp.G1_shoulder_coordination,
+        weight=0.2,
+        params={
+            "asset_cfg": SceneEntityCfg("robot"),
+            "command_name": "base_velocity",
+            "command_threshold": 0.1,
+            "min_joint_speed": 0.1,
         },
     )
 
@@ -318,7 +325,6 @@ class G1CPGEventsCfg:
 @configclass
 class G1CPGCurriculumCfg:
     lin_vel_cmd_levels = CurrTerm(mdp.lin_vel_cmd_levels)
-    ang_vel_cmd_levels = CurrTerm(mdp.ang_vel_cmd_levels)
 
 
 @configclass
@@ -348,7 +354,6 @@ class G1CPGPlayEnvCfg(G1CPGEnvCfg):
     def __post_init__(self):
         super().__post_init__()
         self.scene.num_envs = 1
-        # self.commands.base_velocity.ranges = self.commands.base_velocity.limit_ranges
         self.commands.base_velocity.ranges = mdp.UniformLevelVelocityCommandCfg.Ranges(
             lin_vel_x=(0.0, 1.5), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.0, 0.0)
         )

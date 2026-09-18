@@ -278,6 +278,28 @@ def base_lateral_velocity_l2(env: ManagerBasedRLEnv) -> torch.Tensor:
     return torch.square(asset.data.root_lin_vel_b[:, 1])
 
 
+def G1_shoulder_coordination(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    command_name: str = "base_velocity",
+    command_threshold: float = 0.1,
+    min_joint_speed: float = 0.1,
+) -> torch.Tensor:
+    """奖励实际 G1 机器人对肩部对髋膝 LowLimbCPG 建模的协同运动"""
+    asset: Articulation = env.scene[asset_cfg.name]
+    joint_names = asset.data.joint_names
+    hip_vel = asset.data.joint_vel[
+        :, [joint_names.index("left_hip_pitch_joint"), joint_names.index("right_hip_pitch_joint")]
+    ]
+    opposite_shoulder_vel = asset.data.joint_vel[
+        :, [joint_names.index("right_shoulder_pitch_joint"), joint_names.index("left_shoulder_pitch_joint")]
+    ]
+    same_direction = (hip_vel * opposite_shoulder_vel) > 0.0
+    moving_joints = (hip_vel.abs() > min_joint_speed) & (opposite_shoulder_vel.abs() > min_joint_speed)
+    forward_command = env.command_manager.get_command(command_name)[:, 0] > command_threshold
+    return (same_direction & moving_joints).float().mean(dim=1) * forward_command.float()
+
+
 def cpg_joint_tracking(
     env: ManagerBasedRLEnv,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
