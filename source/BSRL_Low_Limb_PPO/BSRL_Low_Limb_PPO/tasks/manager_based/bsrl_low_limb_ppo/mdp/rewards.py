@@ -285,17 +285,30 @@ def G1_shoulder_coordination(
     command_threshold: float = 0.1,
     min_joint_speed: float = 0.1,
 ) -> torch.Tensor:
-    """奖励实际 G1 机器人对肩部对髋膝 LowLimbCPG 建模的协同运动"""
+    """奖励肩部实际速度与异侧 CPG 髋参考速度同向。"""
     asset: Articulation = env.scene[asset_cfg.name]
     joint_names = asset.data.joint_names
-    hip_vel = asset.data.joint_vel[
-        :, [joint_names.index("left_hip_pitch_joint"), joint_names.index("right_hip_pitch_joint")]
-    ]
+    _step_low_limb_cpg(env, command_name)
+    cpg = env.low_limb_cpg
+    hip_phase = cpg.joints.phase[:, :2]
+    hip_frequency = cpg.joints.frequency[:, :2]
+    hip_coefficients = cpg.shaper.coefficients[:2]
+    hip_reference_vel = torch.zeros_like(hip_phase)
+    for order in range(1, 4):
+        hip_reference_vel.add_(
+            order
+            * (
+                hip_coefficients[:, 2 * order - 1] * torch.cos(order * hip_phase)
+                - hip_coefficients[:, 2 * order] * torch.sin(order * hip_phase)
+            )
+        )
+    # CPG 使用人体屈曲为正，机器人髋 pitch 的参考角取其相反数。
+    hip_reference_vel.mul_(-hip_frequency * cpg.motion_blend[:, None])
     opposite_shoulder_vel = asset.data.joint_vel[
         :, [joint_names.index("right_shoulder_pitch_joint"), joint_names.index("left_shoulder_pitch_joint")]
     ]
-    same_direction = (hip_vel * opposite_shoulder_vel) > 0.0
-    moving_joints = (hip_vel.abs() > min_joint_speed) & (opposite_shoulder_vel.abs() > min_joint_speed)
+    same_direction = (hip_reference_vel * opposite_shoulder_vel) > 0.0
+    moving_joints = opposite_shoulder_vel.abs() > min_joint_speed
     forward_command = env.command_manager.get_command(command_name)[:, 0] > command_threshold
     return (same_direction & moving_joints).float().mean(dim=1) * forward_command.float()
 

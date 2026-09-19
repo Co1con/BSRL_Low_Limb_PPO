@@ -21,7 +21,6 @@ class UnitreeArticulationCfg(ArticulationCfg):
     """Configuration for Unitree articulations."""
 
     joint_sdk_names: list[str] = None
-
     soft_joint_pos_limit_factor = 0.9
 
 
