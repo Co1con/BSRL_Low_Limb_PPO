@@ -193,17 +193,6 @@ class G1CPGRewardsCfg:
     base_height = RewTerm(func=mdp.base_height_l2, weight=-10, params={"target_height": 0.78})
 
     # -- feet
-    gait = RewTerm(
-        func=mdp.feet_gait,
-        weight=0.5,
-        params={
-            "period": 0.8,
-            "offset": [0.0, 0.5],
-            "threshold": 0.55,
-            "command_name": "base_velocity",
-            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*ankle_roll.*"),
-        },
-    )
     feet_slide = RewTerm(
         func=mdp.feet_slide,
         weight=-0.2,
