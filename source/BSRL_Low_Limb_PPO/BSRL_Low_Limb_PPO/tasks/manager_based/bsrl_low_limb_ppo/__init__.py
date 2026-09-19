@@ -61,7 +61,7 @@ gym.register(
     disable_env_checker=True,
     kwargs={
         "env_cfg_entry_point": f"{__name__}.g1_29dof_cpg_velocity_env_cfg:G1CPGEnvCfg",
-        "rsl_rl_cfg_entry_point": f"{G1PPORunnerCfg.__module__}:{G1PPORunnerCfg.__name__}",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.g1_rsl_rl_ppo_cfg:G1PPORunnerCfg",
     },
 )
 
@@ -71,6 +71,6 @@ gym.register(
     disable_env_checker=True,
     kwargs={
         "env_cfg_entry_point": f"{__name__}.g1_29dof_cpg_velocity_env_cfg:G1CPGPlayEnvCfg",
-        "rsl_rl_cfg_entry_point": f"{G1PPORunnerCfg.__module__}:{G1PPORunnerCfg.__name__}",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.g1_rsl_rl_ppo_cfg:G1PPORunnerCfg",
     },
 )

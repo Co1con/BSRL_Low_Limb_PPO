@@ -295,39 +295,19 @@ def base_lateral_velocity_l2(env: ManagerBasedRLEnv) -> torch.Tensor:
     return torch.square(asset.data.root_lin_vel_b[:, 1])
 
 
-def G1_shoulder_coordination(
+def cpg_shoulder_coordination(
     env: ManagerBasedRLEnv,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-    command_name: str = "base_velocity",
-    command_threshold: float = 0.1,
-    min_joint_speed: float = 0.1,
+    direction_smoothing: float = 0.02,
+    shoulder_velocity_scale: float = 0.3,
 ) -> torch.Tensor:
-    """奖励肩部实际速度与异侧 CPG 髋参考速度同向。"""
+    """连续奖励肩部与异侧髋电机反馈速度同向。"""
     asset: Articulation = env.scene[asset_cfg.name]
     joint_names = asset.data.joint_names
-    _step_low_limb_cpg(env, command_name)
-    cpg = env.low_limb_cpg
-    hip_phase = cpg.joints.phase[:, :2]
-    hip_frequency = cpg.joints.frequency[:, :2]
-    hip_coefficients = cpg.shaper.coefficients[:2]
-    hip_reference_vel = torch.zeros_like(hip_phase)
-    for order in range(1, 4):
-        hip_reference_vel.add_(
-            order
-            * (
-                hip_coefficients[:, 2 * order - 1] * torch.cos(order * hip_phase)
-                - hip_coefficients[:, 2 * order] * torch.sin(order * hip_phase)
-            )
-        )
-    # CPG 使用人体屈曲为正，机器人髋 pitch 的参考角取其相反数。
-    hip_reference_vel.mul_(-hip_frequency * cpg.motion_blend[:, None])
-    opposite_shoulder_vel = asset.data.joint_vel[
-        :, [joint_names.index("right_shoulder_pitch_joint"), joint_names.index("left_shoulder_pitch_joint")]
-    ]
-    same_direction = (hip_reference_vel * opposite_shoulder_vel) > 0.0
-    moving_joints = opposite_shoulder_vel.abs() > min_joint_speed
-    forward_command = env.command_manager.get_command(command_name)[:, 0] > command_threshold
-    return (same_direction & moving_joints).float().mean(dim=1) * forward_command.float()
+    hip_vel = asset.data.joint_vel[:, [joint_names.index("left_hip_pitch_joint"), joint_names.index("right_hip_pitch_joint")]]
+    shoulder_vel = asset.data.joint_vel[:, [joint_names.index("right_shoulder_pitch_joint"), joint_names.index("left_shoulder_pitch_joint")]]
+    hip_direction = hip_vel / (hip_vel.abs() + direction_smoothing)
+    return torch.tanh(hip_direction * shoulder_vel / shoulder_velocity_scale).mean(dim=1)
 
 
 def cpg_joint_tracking(

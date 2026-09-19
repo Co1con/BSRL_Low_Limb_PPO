@@ -71,12 +71,13 @@ class G1CPGObservationsCfg:
         velocity_commands = ObsTerm(func=mdp.generated_commands, params={"command_name": "base_velocity"})
         joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel, noise=Unoise(n_min=-0.01, n_max=0.01))
         joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel, scale=0.05, noise=Unoise(n_min=-1.5, n_max=1.5))
+        joint_effort = ObsTerm(func=mdp.joint_effort, scale=0.01)
         last_action = ObsTerm(func=mdp.last_action)
 
         rhythm_cpg_xy = ObsTerm(func=mdp.rhythm_cpg_xy, params={"command_name": "base_velocity"})
 
         def __post_init__(self):
-            self.history_length = 5
+            # self.history_length = 5
             self.enable_corruption = True
             self.concatenate_terms = True
 
@@ -90,17 +91,17 @@ class G1CPGObservationsCfg:
         velocity_commands = ObsTerm(func=mdp.generated_commands, params={"command_name": "base_velocity"})
         joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel)
         joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel, scale=0.05)
+        joint_effort = ObsTerm(func=mdp.joint_effort, scale=0.01)
         last_action = ObsTerm(func=mdp.last_action)
-        height_scanner = ObsTerm(
-            func=mdp.height_scan,
+        height_scanner = ObsTerm(func=mdp.height_scan,
             params={"sensor_cfg": SceneEntityCfg("height_scanner")},
             clip=(-1.0, 5.0),
         )
 
         rhythm_cpg_xy = ObsTerm(func=mdp.rhythm_cpg_xy, params={"command_name": "base_velocity"})
 
-        def __post_init__(self):
-            self.history_length = 5
+        # def __post_init__(self):
+        #     self.history_length = 5
 
     critic: CriticCfg = CriticCfg()
 
@@ -230,14 +231,13 @@ class G1CPGRewardsCfg:
             "joint_names": G1_CPG_JOINT_NAMES,
         },
     )
-    G1_shoulder_coordination = RewTerm(
-        func=mdp.G1_shoulder_coordination,
-        weight=0.5,
+    cpg_shoulder_coordination = RewTerm(
+        func=mdp.cpg_shoulder_coordination,
+        weight=0.3,
         params={
             "asset_cfg": SceneEntityCfg("robot"),
-            "command_name": "base_velocity",
-            "command_threshold": 0.05,
-            "min_joint_speed": 0.1,
+            "direction_smoothing": 0.02,
+            "shoulder_velocity_scale": 0.3,
         },
     )
 
