@@ -21,15 +21,12 @@ from BSRL_Low_Limb_PPO.assets.G1.unitree import UNITREE_G1_29DOF_CFG as ROBOT_CF
 from BSRL_Low_Limb_PPO.tasks.manager_based.bsrl_low_limb_ppo import mdp
 
 
-G1_FOOT_NAMES = ["left_ankle_roll_link", "right_ankle_roll_link"]
-G1_ARM_JOINT_NAMES = [".*_shoulder_.*_joint", ".*_elbow_joint", ".*_wrist_.*_joint"]
 G1_CPG_JOINT_NAMES = (
     "left_hip_pitch_joint",
     "left_knee_joint",
     "right_hip_pitch_joint",
     "right_knee_joint",
 )
-G1_DEFAULT_ROOT_HEIGHT = 0.8
 
 
 @configclass
@@ -135,7 +132,7 @@ class G1CPGActionsCfg:
 
 @configclass
 class G1CPGRewardsCfg:
-        # -- task
+    # -- task
     track_lin_vel_xy = RewTerm(
         func=mdp.track_lin_vel_xy_yaw_frame_exp,
         weight=1.0,
@@ -225,7 +222,7 @@ class G1CPGRewardsCfg:
     # cpg-constraint
     cpg_tracking = RewTerm(
         func=mdp.cpg_joint_tracking,
-        weight=0.25,
+        weight=0.5,
         params={
             "asset_cfg": SceneEntityCfg("robot"),
             "command_name": "base_velocity",
@@ -235,11 +232,11 @@ class G1CPGRewardsCfg:
     )
     G1_shoulder_coordination = RewTerm(
         func=mdp.G1_shoulder_coordination,
-        weight=0.2,
+        weight=0.5,
         params={
             "asset_cfg": SceneEntityCfg("robot"),
             "command_name": "base_velocity",
-            "command_threshold": 0.1,
+            "command_threshold": 0.05,
             "min_joint_speed": 0.1,
         },
     )
