@@ -118,7 +118,7 @@ def compute_g1_symmetric_states(
     actions: torch.Tensor | None = None,
 ):
     """Return original and left-right mirrored G1 observations/actions."""
-    joint_names = tuple(env.scene["robot"].data.joint_names)
+    joint_names = tuple(env.unwrapped.scene["robot"].data.joint_names)
     if len(joint_names) != G1_JOINT_DIM:
         raise ValueError(f"Expected {G1_JOINT_DIM} G1 joints, got {len(joint_names)}.")
 
