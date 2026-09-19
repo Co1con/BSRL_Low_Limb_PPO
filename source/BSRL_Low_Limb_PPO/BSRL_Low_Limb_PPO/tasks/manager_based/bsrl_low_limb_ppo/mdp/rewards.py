@@ -16,7 +16,7 @@ except ImportError:
 from isaaclab.assets import Articulation, RigidObject
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.sensors import ContactSensor
-from isaaclab.utils.math import wrap_to_pi
+from isaaclab.utils.math import wrap_to_pi, yaw_quat
 
 from .observations import (  # pyright: ignore[reportPrivateUsage]
     _step_low_limb_cpg,
@@ -37,6 +37,23 @@ def joint_pos_target_l2(
     joint_pos = wrap_to_pi(asset.data.joint_pos[:, asset_cfg.joint_ids])
     # compute the reward
     return torch.sum(torch.square(joint_pos - target), dim=1)
+
+
+def track_lin_vel_xy_yaw_frame_exp(
+    env: ManagerBasedRLEnv,
+    std: float,
+    command_name: str,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Reward xy velocity tracking in the gravity-aligned yaw frame."""
+    asset: Articulation = env.scene[asset_cfg.name]
+    velocity_yaw = quat_apply_inverse(yaw_quat(asset.data.root_quat_w), asset.data.root_lin_vel_w[:, :3])
+    lin_vel_error = torch.sum(
+        torch.square(env.command_manager.get_command(command_name)[:, :2] - velocity_yaw[:, :2]), dim=1
+    )
+    reward = torch.exp(-lin_vel_error / std**2)
+    reward *= torch.clamp(-asset.data.projected_gravity_b[:, 2], 0.0, 0.7) / 0.7
+    return reward
 
 
 def energy(
