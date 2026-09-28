@@ -314,7 +314,6 @@ def cpg_joint_tracking(
     env: ManagerBasedRLEnv,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
     command_name: str = "base_velocity",
-    command_threshold: float = 0.1,
     joint_names: tuple[str, str, str, str] = (
         "joint_left_hip_pitch",
         "joint_left_knee_pitch",
@@ -330,9 +329,6 @@ def cpg_joint_tracking(
     _step_low_limb_cpg(env, command_name)
     q_ref = env.low_limb_cpg_reference_buf
     q_actual = asset.data.joint_pos[:, joint_ids]
-
-    # command = env.command_manager.get_command(command_name)
-    # is_moving_cmd = torch.norm(command[:, :2], dim=1) > command_threshold
 
     joint_stds = torch.tensor([0.1, 0.1, 0.1, 0.1], device=env.device)
     reward = torch.sum(torch.exp(-torch.square(q_actual - q_ref) / joint_stds), dim=1)
