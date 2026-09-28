@@ -49,8 +49,8 @@ class RhythmHopf:
         self.dtype = dtype
         self.mu = 1.0
         self.gamma = 20.0
-        self.frequency_slope = 0.48749031
-        self.frequency_intercept = 0.60252246
+        self.frequency_slope = 0.3756343915
+        self.frequency_intercept = 0.5563912798
 
         self.x = torch.empty(self.num_envs, device=self.device, dtype=dtype)
         self.y = torch.empty_like(self.x)
@@ -69,10 +69,10 @@ class RhythmHopf:
         return self.omega / TWO_PI
 
     def velocity_to_frequency(self, velocity: torch.Tensor) -> torch.Tensor:
-        velocity = velocity.clamp_min(0.0)
-        frequency = self.frequency_slope * velocity + self.frequency_intercept
+        speed = velocity.abs()
+        frequency = self.frequency_slope * speed + self.frequency_intercept
         return torch.where(
-            velocity > 0.0,
+            speed > 0.0,
             frequency,
             torch.zeros_like(frequency),
         )
@@ -82,7 +82,7 @@ class RhythmHopf:
         ids = _env_ids(env_ids, self.num_envs, self.device)
         if ids.numel() == 0:
             return
-        # 静止时统一使用规范相位；起步腿在收到正速度命令时再随机选择。
+        # 静止时统一使用规范相位；起步腿在收到非零速度命令时再随机选择。
         self.reset_phase[ids] = 0.0
         radius = math.sqrt(self.mu)
         self.x[ids] = radius * torch.cos(self.reset_phase[ids])
@@ -108,10 +108,10 @@ class RhythmHopf:
         velocity = _batch_tensor(
             velocity, self.num_envs, self.device, self.dtype, "velocity"
         )
-        moving = velocity > 0.0
+        moving = velocity != 0.0
         self._prepare_start(moving & ~self.is_running)
 
-        commanded_omega = TWO_PI * self.velocity_to_frequency(velocity)
+        commanded_omega = velocity.sign() * TWO_PI * self.velocity_to_frequency(velocity)
         self.omega.copy_(torch.where(moving, commanded_omega, self.omega))
         self.stop_requested.copy_(
             torch.where(moving, False, self.stop_requested | self.is_running)
@@ -221,7 +221,7 @@ class JointOscillator:
         target_omega = torch.where(
             rhythm_frequency[:, None] > 0.0,
             target_omega.clamp_min(0.0),
-            target_omega,
+            torch.where(rhythm_frequency[:, None] < 0.0, target_omega.clamp_max(0.0), target_omega),
         )
 
         decay = math.exp(-self.frequency_response * dt)
@@ -284,8 +284,8 @@ class LowLimbCPG:
         self.num_envs = int(num_envs)
         self.device = torch.device(device)
         self.dtype = dtype
-        self.phase_speed_slope = -0.3307487167
-        self.phase_speed_intercept = 5.2494736659
+        self.phase_speed_slope = -0.2865263613
+        self.phase_speed_intercept = 5.1776800215
         self.max_integration_dt = 0.005
         self.start_transition_time = 0.3
         self.stop_transition_time = 0.3
@@ -331,7 +331,7 @@ class LowLimbCPG:
         if ids.numel() == 0:
             return
         phase_difference = (
-            self.phase_speed_slope * self.velocity[ids] + self.phase_speed_intercept
+            self.phase_speed_slope * self.velocity[ids].abs() + self.phase_speed_intercept
         )
         self.hip_knee_phase_difference[ids] = phase_difference
         self.phase_offsets[ids, 0] = 0.0
@@ -364,7 +364,7 @@ class LowLimbCPG:
 
     def _step_once(self, target_velocity: torch.Tensor, dt: float) -> None:
         self._velocity.copy_(target_velocity)
-        moving = target_velocity > 0.0
+        moving = target_velocity != 0.0
         starting = moving & ~self.rhythm.is_running
         self.rhythm.step(target_velocity, dt)
         self._update_motion_blend(moving, dt)
@@ -386,13 +386,13 @@ class LowLimbCPG:
     def step(self, target_velocity: torch.Tensor, dt: float) -> torch.Tensor:
         """推进全部环境并返回 ``[num_envs, 4]`` 关节参考角。
 
-        输入可以是标量、``[num_envs]`` 或 ``[num_envs, 1]``。负值会被截断为
-        零，因为当前速度—步频模型仅针对向前步速建立。
+        输入可以是标量、``[num_envs]`` 或 ``[num_envs, 1]``。
+        速度幅值控制步频和相位差，符号控制极限环旋转方向。
         """
         dt = _check_dt(dt)
         target_velocity = _batch_tensor(
             target_velocity, self.num_envs, self.device, self.dtype, "target_velocity"
-        ).clamp_min(0.0)
+        )
         substeps = max(1, math.ceil(dt / self.max_integration_dt))
         substep_dt = dt / substeps
         for _ in range(substeps):
