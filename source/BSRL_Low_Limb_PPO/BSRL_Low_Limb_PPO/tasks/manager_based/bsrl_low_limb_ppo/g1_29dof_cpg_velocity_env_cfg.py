@@ -116,10 +116,10 @@ class G1CPGCommandsCfg:
         heading_command=False,
         debug_vis=True,
         ranges=mdp.UniformLevelVelocityCommandCfg.Ranges(
-            lin_vel_x=(-0.1, 0.1), lin_vel_y=(0.0, 0.0), ang_vel_z=(-0.5, 0.5)
+            lin_vel_x=(-0.1, 0.1), lin_vel_y=(0.0, 0.0), ang_vel_z=(0.0, 0.0)
         ),
         limit_ranges=mdp.UniformLevelVelocityCommandCfg.Ranges(
-            lin_vel_x=(-1.0, 1.5), lin_vel_y=(0.0, 0.0), ang_vel_z=(-0.5, 0.5)
+            lin_vel_x=(-1.0, 1.5), lin_vel_y=(0.0, 0.0), ang_vel_z=(0.0, 0.0)
         ),
     )
 
@@ -136,11 +136,18 @@ class G1CPGRewardsCfg:
     # -- task
     track_lin_vel_xy = RewTerm(
         func=mdp.track_lin_vel_xy_yaw_frame_exp,
-        weight=1.0,
-        params={"command_name": "base_velocity", "std": math.sqrt(0.25)},
+        weight=2.0,
+        params={
+            "command_name": "base_velocity",
+            "std": math.sqrt(0.25)
+        },
     )
     track_ang_vel_z = RewTerm(
-        func=mdp.track_ang_vel_z_exp, weight=0.5, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
+        func=mdp.track_ang_vel_z_exp, 
+        weight=1.0,
+        params={
+            "command_name": "base_velocity", "std": math.sqrt(0.25)
+        },
     )
     alive = RewTerm(func=mdp.is_alive, weight=0.15)
 
@@ -155,7 +162,7 @@ class G1CPGRewardsCfg:
 
     joint_deviation_arms = RewTerm(
         func=mdp.joint_deviation_l1,
-        weight=-0.2,
+        weight=-0.1,
         params={
             "asset_cfg": SceneEntityCfg(
                 "robot",
@@ -169,7 +176,7 @@ class G1CPGRewardsCfg:
     )
     joint_deviation_waists = RewTerm(
         func=mdp.joint_deviation_l1,
-        weight=-0.5,
+        weight=-1.0,
         params={
             "asset_cfg": SceneEntityCfg(
                 "robot",
@@ -181,7 +188,7 @@ class G1CPGRewardsCfg:
     )
     joint_deviation_legs = RewTerm(
         func=mdp.joint_deviation_l1,
-        weight=-0.5,
+        weight=-1.0,
         params={
             "asset_cfg": SceneEntityCfg(
                 "robot",
@@ -240,7 +247,7 @@ class G1CPGRewardsCfg:
     )
     cpg_shoulder_coordination = RewTerm(
         func=mdp.cpg_shoulder_coordination,
-        weight=0.2,
+        weight=0.3,
         params={
             "asset_cfg": SceneEntityCfg("robot"),
             "direction_smoothing": 0.02,
