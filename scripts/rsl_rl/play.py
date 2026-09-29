@@ -308,7 +308,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
             if obs_logger is not None and not torch.any(dones[obs_logger.env_id]):
                 q_target_all = _get_processed_actions(log_action_term)
 
-                q_cpg_4 = env.unwrapped.low_limb_cpg_reference_buf
+                q_halo_4 = env.unwrapped.low_limb_halo_reference_buf
                 q_target_4 = q_target_all[:, log_joint_ids]
                 q_action_4 = actions[:, log_joint_ids]
                 q_actual_4 = log_robot.data.joint_pos[:, log_actual_joint_ids]
@@ -322,7 +322,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
                 base_rate = log_robot.data.root_ang_vel_b
                 height = log_robot.data.root_pos_w[:, 2:3]
                 rhythm = torch.stack(
-                    (env.unwrapped.low_limb_cpg.rhythm.x, env.unwrapped.low_limb_cpg.rhythm.y), dim=1
+                    (env.unwrapped.low_limb_halo.rhythm.x, env.unwrapped.low_limb_halo.rhythm.y), dim=1
                 )
                 foot_force = log_contact_sensor.data.net_forces_w[:, log_foot_ids, :]
                 foot_force_norm = torch.linalg.norm(foot_force, dim=2)
@@ -343,7 +343,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
                         foot_force_norm,
                         q_roll_target,
                         q_roll_actual,
-                        q_cpg_4,
+                        q_halo_4,
                         q_target_4,
                         q_action_4,
                         q_actual_4,

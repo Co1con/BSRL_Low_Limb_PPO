@@ -1,4 +1,4 @@
-"""PPO runner for the G1 29-DoF CPG task."""
+"""PPO runner for the G1 29-DoF HALO task."""
 
 from isaaclab.utils import configclass
 from isaaclab_rl.rsl_rl import RslRlOnPolicyRunnerCfg, RslRlPpoActorCriticCfg, RslRlPpoAlgorithmCfg, RslRlSymmetryCfg
@@ -11,7 +11,7 @@ class G1PPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 24
     max_iterations = 50000
     save_interval = 100
-    experiment_name = "g1_29dof_cpg_velocity"
+    experiment_name = "g1_29dof_halo_velocity"
     empirical_normalization = False
     clip_actions = 5.0
     policy = RslRlPpoActorCriticCfg(

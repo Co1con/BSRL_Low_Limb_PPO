@@ -19,7 +19,7 @@ from isaaclab.sensors import ContactSensor
 from isaaclab.utils.math import wrap_to_pi, yaw_quat
 
 from .observations import (  # pyright: ignore[reportPrivateUsage]
-    _step_low_limb_cpg,
+    _step_low_limb_halo,
 )
 
 if TYPE_CHECKING:
@@ -295,7 +295,7 @@ def base_lateral_velocity_l2(env: ManagerBasedRLEnv) -> torch.Tensor:
     return torch.square(asset.data.root_lin_vel_b[:, 1])
 
 
-def cpg_shoulder_coordination(
+def halo_shoulder_coordination(
     env: ManagerBasedRLEnv,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
     direction_smoothing: float = 0.02,
@@ -310,7 +310,7 @@ def cpg_shoulder_coordination(
     return torch.tanh(hip_direction * shoulder_vel / shoulder_velocity_scale).mean(dim=1)
 
 
-def cpg_joint_tracking(
+def halo_joint_tracking(
     env: ManagerBasedRLEnv,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
     command_name: str = "base_velocity",
@@ -321,13 +321,13 @@ def cpg_joint_tracking(
         "joint_right_knee_pitch",
     ),
 ) -> torch.Tensor:
-    """奖励实际髋膝角对新版 LowLimbCPG 参考角的跟踪。"""
+    """奖励实际髋膝角对新版 HALO 参考角的跟踪。"""
     asset: Articulation = env.scene[asset_cfg.name]
 
     joint_ids = [asset.data.joint_names.index(name) for name in joint_names]
 
-    _step_low_limb_cpg(env, command_name)
-    q_ref = env.low_limb_cpg_reference_buf
+    _step_low_limb_halo(env, command_name)
+    q_ref = env.low_limb_halo_reference_buf
     q_actual = asset.data.joint_pos[:, joint_ids]
 
     joint_stds = torch.tensor([0.1, 0.1, 0.1, 0.1], device=env.device)

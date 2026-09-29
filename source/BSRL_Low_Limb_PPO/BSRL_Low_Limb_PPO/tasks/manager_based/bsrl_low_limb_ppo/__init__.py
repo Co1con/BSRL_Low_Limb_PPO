@@ -33,44 +33,44 @@ gym.register(
     },
 )
 
-# CPG —— reward constraint
+# HALO —— reward constraint
 gym.register(
-    id="bsrl-cpg-velocity-train",
+    id="bsrl-halo-velocity-train",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.bsrl_cpg_velocity_env_cfg:RobotCPGEnvCfg",
+        "env_cfg_entry_point": f"{__name__}.bsrl_halo_velocity_env_cfg:RobotHALOEnvCfg",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:PPORunnerCfg",
     },
 )
 
 gym.register(
-    id="bsrl-cpg-velocity-play",
+    id="bsrl-halo-velocity-play",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.bsrl_cpg_velocity_env_cfg:RobotCPGPlayEnvCfg",
+        "env_cfg_entry_point": f"{__name__}.bsrl_halo_velocity_env_cfg:RobotHALOPlayEnvCfg",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:PPORunnerCfg",
     },
 )
 
 
 gym.register(
-    id="g1-29dof-cpg-velocity-train",
+    id="g1-29dof-halo-velocity-train",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.g1_29dof_cpg_velocity_env_cfg:G1CPGEnvCfg",
+        "env_cfg_entry_point": f"{__name__}.g1_29dof_halo_velocity_env_cfg:G1HALOEnvCfg",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.g1_rsl_rl_ppo_cfg:G1PPORunnerCfg",
     },
 )
 
 gym.register(
-    id="g1-29dof-cpg-velocity-play",
+    id="g1-29dof-halo-velocity-play",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.g1_29dof_cpg_velocity_env_cfg:G1CPGPlayEnvCfg",
+        "env_cfg_entry_point": f"{__name__}.g1_29dof_halo_velocity_env_cfg:G1HALOPlayEnvCfg",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.g1_rsl_rl_ppo_cfg:G1PPORunnerCfg",
     },
 )

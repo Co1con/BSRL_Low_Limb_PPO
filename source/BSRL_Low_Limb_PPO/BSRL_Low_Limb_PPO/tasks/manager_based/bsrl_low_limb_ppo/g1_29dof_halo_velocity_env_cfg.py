@@ -21,7 +21,7 @@ from BSRL_Low_Limb_PPO.assets.G1.unitree import UNITREE_G1_29DOF_CFG as ROBOT_CF
 from BSRL_Low_Limb_PPO.tasks.manager_based.bsrl_low_limb_ppo import mdp
 
 
-G1_CPG_JOINT_NAMES = (
+G1_HALO_JOINT_NAMES = (
     "left_hip_pitch_joint",
     "left_knee_joint",
     "right_hip_pitch_joint",
@@ -63,7 +63,7 @@ class G1RobotSceneCfg(InteractiveSceneCfg):
 
 
 @configclass
-class G1CPGObservationsCfg:
+class G1HALOObservationsCfg:
     @configclass
     class PolicyCfg(ObsGroup):
         base_ang_vel = ObsTerm(func=mdp.base_ang_vel, scale=0.2, noise=Unoise(n_min=-0.2, n_max=0.2))
@@ -74,7 +74,7 @@ class G1CPGObservationsCfg:
         joint_effort = ObsTerm(func=mdp.joint_effort, scale=0.01)
         last_action = ObsTerm(func=mdp.last_action)
 
-        rhythm_cpg_xy = ObsTerm(func=mdp.rhythm_cpg_xy, params={"command_name": "base_velocity"})
+        rhythm_halo_xy = ObsTerm(func=mdp.rhythm_halo_xy, params={"command_name": "base_velocity"})
 
         def __post_init__(self):
             # self.history_length = 5
@@ -98,7 +98,7 @@ class G1CPGObservationsCfg:
             clip=(-1.0, 5.0),
         )
 
-        rhythm_cpg_xy = ObsTerm(func=mdp.rhythm_cpg_xy, params={"command_name": "base_velocity"})
+        rhythm_halo_xy = ObsTerm(func=mdp.rhythm_halo_xy, params={"command_name": "base_velocity"})
 
         # def __post_init__(self):
         #     self.history_length = 5
@@ -107,7 +107,7 @@ class G1CPGObservationsCfg:
 
 
 @configclass
-class G1CPGCommandsCfg:
+class G1HALOCommandsCfg:
     base_velocity = mdp.UniformLevelVelocityCommandCfg(
         asset_name="robot",
         resampling_time_range=(10.0, 10.0),
@@ -125,14 +125,14 @@ class G1CPGCommandsCfg:
 
 
 @configclass
-class G1CPGActionsCfg:
+class G1HALOActionsCfg:
     JointPositionAction = mdp.JointPositionActionCfg(
         asset_name="robot", joint_names=[".*"], scale=0.25, use_default_offset=True
     )
 
 
 @configclass
-class G1CPGRewardsCfg:
+class G1HALORewardsCfg:
     # -- task
     track_lin_vel_xy = RewTerm(
         func=mdp.track_lin_vel_xy_yaw_frame_exp,
@@ -234,18 +234,18 @@ class G1CPGRewardsCfg:
         },
     )
 
-    # cpg-constraint
-    cpg_tracking = RewTerm(
-        func=mdp.cpg_joint_tracking,
+    # halo-constraint
+    halo_tracking = RewTerm(
+        func=mdp.halo_joint_tracking,
         weight=0.5,
         params={
             "asset_cfg": SceneEntityCfg("robot"),
             "command_name": "base_velocity",
-            "joint_names": G1_CPG_JOINT_NAMES,
+            "joint_names": G1_HALO_JOINT_NAMES,
         },
     )
-    cpg_shoulder_coordination = RewTerm(
-        func=mdp.cpg_shoulder_coordination,
+    halo_shoulder_coordination = RewTerm(
+        func=mdp.halo_shoulder_coordination,
         weight=0.3,
         params={
             "asset_cfg": SceneEntityCfg("robot"),
@@ -256,14 +256,14 @@ class G1CPGRewardsCfg:
 
 
 @configclass
-class G1CPGTerminationsCfg:
+class G1HALOTerminationsCfg:
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
     base_height = DoneTerm(func=mdp.root_height_below_minimum, params={"minimum_height": 0.2})
     bad_orientation = DoneTerm(func=mdp.bad_orientation, params={"limit_angle": 0.8})
 
 
 @configclass
-class G1CPGEventsCfg:
+class G1HALOEventsCfg:
     physics_material = EventTerm(
         func=mdp.randomize_rigid_body_material,
         mode="startup",
@@ -318,24 +318,24 @@ class G1CPGEventsCfg:
 
 
 @configclass
-class G1CPGCurriculumCfg:
+class G1HALOCurriculumCfg:
     lin_vel_cmd_levels = CurrTerm(mdp.lin_vel_cmd_levels)
     # ang_vel_cmd_levels = CurrTerm(mdp.ang_vel_cmd_levels)
 
 
 @configclass
-class G1CPGEnvCfg(ManagerBasedRLEnvCfg):
+class G1HALOEnvCfg(ManagerBasedRLEnvCfg):
     # Scene settings
     scene: G1RobotSceneCfg = G1RobotSceneCfg(num_envs=4096, env_spacing=2.5)
     # Basic settings
-    observations: G1CPGObservationsCfg = G1CPGObservationsCfg()
-    actions: G1CPGActionsCfg = G1CPGActionsCfg()
-    commands: G1CPGCommandsCfg = G1CPGCommandsCfg()
+    observations: G1HALOObservationsCfg = G1HALOObservationsCfg()
+    actions: G1HALOActionsCfg = G1HALOActionsCfg()
+    commands: G1HALOCommandsCfg = G1HALOCommandsCfg()
     # MDP settings
-    rewards: G1CPGRewardsCfg = G1CPGRewardsCfg()
-    terminations: G1CPGTerminationsCfg = G1CPGTerminationsCfg()
-    events: G1CPGEventsCfg = G1CPGEventsCfg()
-    curriculum: G1CPGCurriculumCfg = G1CPGCurriculumCfg()
+    rewards: G1HALORewardsCfg = G1HALORewardsCfg()
+    terminations: G1HALOTerminationsCfg = G1HALOTerminationsCfg()
+    events: G1HALOEventsCfg = G1HALOEventsCfg()
+    curriculum: G1HALOCurriculumCfg = G1HALOCurriculumCfg()
 
     def __post_init__(self):
         # general settings
@@ -361,7 +361,7 @@ class G1CPGEnvCfg(ManagerBasedRLEnvCfg):
 
 
 @configclass
-class G1CPGPlayEnvCfg(G1CPGEnvCfg):
+class G1HALOPlayEnvCfg(G1HALOEnvCfg):
     def __post_init__(self):
         super().__post_init__()
         self.scene.num_envs = 1

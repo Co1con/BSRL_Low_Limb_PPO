@@ -1,4 +1,4 @@
-"""适用于 Isaac Lab 并行环境的下肢 CPG。
+"""适用于 Isaac Lab 并行环境的下肢 HALO。
 
 全部动态状态均以 ``num_envs`` 为第一维并保存在同一计算设备上。关节维
 顺序固定为：左髋、右髋、左膝、右膝。
@@ -49,8 +49,9 @@ class RhythmHopf:
         self.dtype = dtype
         self.mu = 1.0
         self.gamma = 20.0
-        self.frequency_slope = 0.3756343915
-        self.frequency_intercept = 0.5563912798
+        self.frequency_slope = 0.48749031
+        self.frequency_intercept = 0.60252246
+        self.direction_transition_time = 0.2
 
         self.x = torch.empty(self.num_envs, device=self.device, dtype=dtype)
         self.y = torch.empty_like(self.x)
@@ -103,16 +104,20 @@ class RhythmHopf:
         self.y[ids] = radius * torch.sin(self.reset_phase[ids])
 
     @torch.no_grad()
-    def step(self, velocity: torch.Tensor, dt: float) -> tuple[torch.Tensor, torch.Tensor]:
+    def step(self, velocity: torch.Tensor, dt: float, moving: torch.Tensor | None = None) -> tuple[torch.Tensor, torch.Tensor]:
         dt = _check_dt(dt)
         velocity = _batch_tensor(
             velocity, self.num_envs, self.device, self.dtype, "velocity"
         )
-        moving = velocity != 0.0
+        if moving is None:
+            moving = velocity != 0.0
         self._prepare_start(moving & ~self.is_running)
 
         commanded_omega = velocity.sign() * TWO_PI * self.velocity_to_frequency(velocity)
-        self.omega.copy_(torch.where(moving, commanded_omega, self.omega))
+        decay = math.exp(-dt / self.direction_transition_time)
+        self.omega.copy_(torch.where(
+            moving, commanded_omega + (self.omega - commanded_omega) * decay, self.omega
+        ))
         self.stop_requested.copy_(
             torch.where(moving, False, self.stop_requested | self.is_running)
         )
@@ -267,13 +272,13 @@ class JointShaper:
         return angle
 
 
-class LowLimbCPG:
-    """速度驱动的四关节批量 CPG。
+class HALO:
+    """速度驱动的四关节批量 HALO。
 
     Args:
         num_envs: 并行环境数量。
         device: Isaac Lab 环境使用的设备，例如 ``"cuda:0"``。
-        dtype: CPG 状态的数据类型，训练中默认使用 ``torch.float32``。
+        dtype: HALO 状态的数据类型，训练中默认使用 ``torch.float32``。
     """
 
     joint_names = JOINT_NAMES
@@ -284,9 +289,10 @@ class LowLimbCPG:
         self.num_envs = int(num_envs)
         self.device = torch.device(device)
         self.dtype = dtype
-        self.phase_speed_slope = -0.2865263613
-        self.phase_speed_intercept = 5.1776800215
+        self.phase_speed_slope = -0.3307487167
+        self.phase_speed_intercept = 5.2494736659
         self.max_integration_dt = 0.005
+        self.zero_hold_time = 0.06
         self.start_transition_time = 0.3
         self.stop_transition_time = 0.3
 
@@ -304,6 +310,10 @@ class LowLimbCPG:
             (0.1, 0.1, 0.2, 0.2), device=self.device, dtype=dtype
         )
         self.motion_blend = torch.zeros(num_envs, device=self.device, dtype=dtype)
+        self.zero_elapsed = torch.zeros_like(self.motion_blend)
+        self.blend_start = torch.zeros_like(self.motion_blend)
+        self.blend_target = torch.zeros_like(self.motion_blend)
+        self.blend_elapsed = torch.zeros_like(self.motion_blend)
         self.gait_angles = self.standing_angles.unsqueeze(0).expand(num_envs, -1).clone()
         self.angles = self.gait_angles.clone()
         self._update_phase_offsets()
@@ -346,7 +356,11 @@ class LowLimbCPG:
         if ids.numel() == 0:
             return
         self._velocity[ids] = 0.0
+        self.zero_elapsed[ids] = 0.0
         self.motion_blend[ids] = 0.0
+        self.blend_start[ids] = 0.0
+        self.blend_target[ids] = 0.0
+        self.blend_elapsed[ids] = 0.0
         self.rhythm.reset(ids)
         self.joints.reset(ids)
         self._update_phase_offsets(ids)
@@ -354,19 +368,30 @@ class LowLimbCPG:
         self.angles[ids] = self.standing_angles
 
     def _update_motion_blend(self, moving: torch.Tensor, dt: float) -> None:
-        start_step = dt / self.start_transition_time
-        stop_step = dt / self.stop_transition_time
-        self.motion_blend.copy_(torch.where(
+        target = moving.to(self.dtype)
+        changed = target != self.blend_target
+        self.blend_start.copy_(torch.where(changed, self.motion_blend, self.blend_start))
+        self.blend_elapsed.copy_(torch.where(changed, torch.zeros_like(self.blend_elapsed), self.blend_elapsed))
+        self.blend_target.copy_(target)
+        duration = torch.where(
             moving,
-            (self.motion_blend + start_step).clamp_max(1.0),
-            (self.motion_blend - stop_step).clamp_min(0.0),
-        ))
+            torch.full_like(self.motion_blend, self.start_transition_time),
+            torch.full_like(self.motion_blend, self.stop_transition_time),
+        )
+        self.blend_elapsed.copy_(torch.minimum(self.blend_elapsed + dt, duration))
+        progress = self.blend_elapsed / duration
+        smoothstep = progress.square() * (3.0 - 2.0 * progress)
+        self.motion_blend.copy_(self.blend_start + (target - self.blend_start) * smoothstep)
 
     def _step_once(self, target_velocity: torch.Tensor, dt: float) -> None:
         self._velocity.copy_(target_velocity)
-        moving = target_velocity != 0.0
+        self.zero_elapsed.copy_(torch.where(
+            target_velocity == 0.0, self.zero_elapsed + dt, torch.zeros_like(self.zero_elapsed)
+        ))
+        # 单步过零保持运行；持续零速才进入停车流程。
+        moving = (target_velocity != 0.0) | (self.rhythm.is_running & (self.zero_elapsed < self.zero_hold_time))
         starting = moving & ~self.rhythm.is_running
-        self.rhythm.step(target_velocity, dt)
+        self.rhythm.step(target_velocity, dt, moving=moving)
         self._update_motion_blend(moving, dt)
         self._update_phase_offsets()
         self.joints.reset(torch.nonzero(starting, as_tuple=False).flatten())
@@ -405,5 +430,5 @@ __all__ = [
     "RhythmHopf",
     "JointOscillator",
     "JointShaper",
-    "LowLimbCPG",
+    "HALO",
 ]

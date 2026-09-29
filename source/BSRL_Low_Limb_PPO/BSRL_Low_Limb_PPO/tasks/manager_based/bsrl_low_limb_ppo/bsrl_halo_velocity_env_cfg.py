@@ -20,7 +20,7 @@ BSRL_FOOT_NAME = ["link_left_ankle_roll", "link_right_ankle_roll"]
 
 
 @configclass
-class CPGObservationsCfg:
+class HALOObservationsCfg:
     @configclass
     class PolicyCfg(ObsGroup):
         base_ang_vel = ObsTerm(func=mdp.base_ang_vel, scale=0.2, noise=Unoise(n_min=-0.2, n_max=0.2))
@@ -31,7 +31,7 @@ class CPGObservationsCfg:
         joint_effort = ObsTerm(func=mdp.joint_effort, scale=0.01)
         last_action = ObsTerm(func=mdp.last_action)
 
-        rhythm_cpg_xy = ObsTerm(func=mdp.rhythm_cpg_xy, params={"command_name": "base_velocity"})
+        rhythm_halo_xy = ObsTerm(func=mdp.rhythm_halo_xy, params={"command_name": "base_velocity"})
 
         def __post_init__(self):
             # self.history_length = 5
@@ -56,7 +56,7 @@ class CPGObservationsCfg:
             clip=(-1.0, 5.0),
         )
 
-        rhythm_cpg_xy = ObsTerm(func=mdp.rhythm_cpg_xy, params={"command_name": "base_velocity"})
+        rhythm_halo_xy = ObsTerm(func=mdp.rhythm_halo_xy, params={"command_name": "base_velocity"})
 
         # def __post_init__(self):
         #     self.history_length = 5
@@ -65,7 +65,7 @@ class CPGObservationsCfg:
 
 
 @configclass
-class CPGCommandsCfg:
+class HALOCommandsCfg:
     base_velocity = mdp.UniformLevelVelocityCommandCfg(
         asset_name="robot",
         resampling_time_range=(10.0, 10.0),
@@ -84,12 +84,12 @@ class CPGCommandsCfg:
 
 
 @configclass
-class CPGActionsCfg:
+class HALOActionsCfg:
     joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.25, use_default_offset=True)
 
 
 @configclass
-class CPGRewardsCfg:
+class HALORewardsCfg:
     # Task
     track_lin_vel_xy = RewTerm(
         func=mdp.track_lin_vel_xy_exp,
@@ -129,9 +129,9 @@ class CPGRewardsCfg:
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=["joint_.*_hip_roll", "joint_.*_hip_yaw"])},
     )
 
-    # cpg-constraint
-    cpg_tracking = RewTerm(
-        func=mdp.cpg_joint_tracking,
+    # halo-constraint
+    halo_tracking = RewTerm(
+        func=mdp.halo_joint_tracking,
         weight=0.5,
         params={
             "asset_cfg": SceneEntityCfg("robot"),
@@ -183,7 +183,7 @@ class CPGRewardsCfg:
 
 
 @configclass
-class CPGEventCfg:
+class HALOEventCfg:
     ## startup
     # 随机化材质
     physics_material = EventTerm(
@@ -264,25 +264,25 @@ class CPGEventCfg:
 
 
 @configclass
-class CPGCurriculumCfg:
+class HALOCurriculumCfg:
     # terrain_levels = CurrTerm(func=mdp.terrain_levels_vel)
     lin_vel_cmd_levels = CurrTerm(mdp.lin_vel_cmd_levels)
     ang_vel_cmd_levels = CurrTerm(mdp.ang_vel_cmd_levels)
 
 @configclass
-class RobotCPGEnvCfg(RobotEnvCfg):
+class RobotHALOEnvCfg(RobotEnvCfg):
     # 观测、动作、指令配置
-    observations: CPGObservationsCfg = CPGObservationsCfg()
-    commands: CPGCommandsCfg = CPGCommandsCfg()
-    actions: CPGActionsCfg = CPGActionsCfg()
+    observations: HALOObservationsCfg = HALOObservationsCfg()
+    commands: HALOCommandsCfg = HALOCommandsCfg()
+    actions: HALOActionsCfg = HALOActionsCfg()
     # MDP相关配置
-    rewards: CPGRewardsCfg = CPGRewardsCfg()
-    events: CPGEventCfg = CPGEventCfg()
-    curriculum: CPGCurriculumCfg = CPGCurriculumCfg()
+    rewards: HALORewardsCfg = HALORewardsCfg()
+    events: HALOEventCfg = HALOEventCfg()
+    curriculum: HALOCurriculumCfg = HALOCurriculumCfg()
 
 
 @configclass
-class RobotCPGPlayEnvCfg(RobotCPGEnvCfg):
+class RobotHALOPlayEnvCfg(RobotHALOEnvCfg):
     def __post_init__(self):
         super().__post_init__()
         self.scene.num_envs = 1
