@@ -295,8 +295,14 @@ class HALO:
         self.zero_hold_time = 0.06
         self.start_transition_time = 0.3
         self.stop_transition_time = 0.3
+        self.yaw_amplitude_gain = 0.25
+        self.amplitude_min = 0.7
+        self.amplitude_max = 1.3
+        self.amplitude_transition_time = 0.1
 
         self._velocity = torch.zeros(num_envs, device=self.device, dtype=dtype)
+        self.yaw_target_velocity = torch.zeros_like(self._velocity)
+        self.yaw_scale = torch.zeros_like(self._velocity)
         self.rhythm = RhythmHopf(num_envs, self.device, dtype)
         self.joints = JointOscillator(num_envs, self.device, dtype)
         self.shaper = JointShaper(self.device, dtype)
@@ -310,6 +316,7 @@ class HALO:
             (0.1, 0.1, 0.2, 0.2), device=self.device, dtype=dtype
         )
         self.motion_blend = torch.zeros(num_envs, device=self.device, dtype=dtype)
+        self.amplitude = torch.ones(num_envs, len(JOINT_NAMES), device=self.device, dtype=dtype)
         self.zero_elapsed = torch.zeros_like(self.motion_blend)
         self.blend_start = torch.zeros_like(self.motion_blend)
         self.blend_target = torch.zeros_like(self.motion_blend)
@@ -356,6 +363,9 @@ class HALO:
         if ids.numel() == 0:
             return
         self._velocity[ids] = 0.0
+        self.yaw_target_velocity[ids] = 0.0
+        self.yaw_scale[ids] = 0.0
+        self.amplitude[ids] = 1.0
         self.zero_elapsed[ids] = 0.0
         self.motion_blend[ids] = 0.0
         self.blend_start[ids] = 0.0
@@ -383,8 +393,27 @@ class HALO:
         smoothstep = progress.square() * (3.0 - 2.0 * progress)
         self.motion_blend.copy_(self.blend_start + (target - self.blend_start) * smoothstep)
 
-    def _step_once(self, target_velocity: torch.Tensor, dt: float) -> None:
+    def _update_amplitude(
+        self, target_velocity: torch.Tensor, yaw_target_velocity: torch.Tensor, dt: float
+    ) -> None:
+        target_scale = (
+            self.yaw_amplitude_gain * yaw_target_velocity * torch.sign(target_velocity)
+        ).clamp(-0.3, 0.3)
+        response = 1.0 - math.exp(-dt / self.amplitude_transition_time)
+        self.yaw_scale.add_(response * (target_scale - self.yaw_scale))
+        left = (1.0 - self.yaw_scale).clamp(self.amplitude_min, self.amplitude_max)
+        right = (1.0 + self.yaw_scale).clamp(self.amplitude_min, self.amplitude_max)
+        self.amplitude[:, 0].copy_(left)
+        self.amplitude[:, 1].copy_(right)
+        self.amplitude[:, 2].copy_(left)
+        self.amplitude[:, 3].copy_(right)
+
+    def _step_once(
+        self, target_velocity: torch.Tensor, yaw_target_velocity: torch.Tensor, dt: float
+    ) -> None:
         self._velocity.copy_(target_velocity)
+        self.yaw_target_velocity.copy_(yaw_target_velocity)
+        self._update_amplitude(target_velocity, yaw_target_velocity, dt)
         self.zero_elapsed.copy_(torch.where(
             target_velocity == 0.0, self.zero_elapsed + dt, torch.zeros_like(self.zero_elapsed)
         ))
@@ -404,24 +433,29 @@ class HALO:
         self.gait_angles.copy_(self.shaper.step(self.joints.phase))
         self.angles.copy_(
             self.standing_angles
-            + self.motion_blend[:, None] * (self.gait_angles - self.standing_angles)
+            + self.motion_blend[:, None] * self.amplitude * (self.gait_angles - self.standing_angles)
         )
 
     @torch.no_grad()
-    def step(self, target_velocity: torch.Tensor, dt: float) -> torch.Tensor:
+    def step(
+        self, target_velocity: torch.Tensor, yaw_target_velocity: torch.Tensor, dt: float
+    ) -> torch.Tensor:
         """推进全部环境并返回 ``[num_envs, 4]`` 关节参考角。
 
-        输入可以是标量、``[num_envs]`` 或 ``[num_envs, 1]``。
-        速度幅值控制步频和相位差，符号控制极限环旋转方向。
+        两个指令均可为标量、``[num_envs]`` 或 ``[num_envs, 1]``。
+        线速度幅值控制步频和相位差，线速度与 yaw 的符号共同控制左右摆幅。
         """
         dt = _check_dt(dt)
         target_velocity = _batch_tensor(
             target_velocity, self.num_envs, self.device, self.dtype, "target_velocity"
         )
+        yaw_target_velocity = _batch_tensor(
+            yaw_target_velocity, self.num_envs, self.device, self.dtype, "yaw_target_velocity"
+        )
         substeps = max(1, math.ceil(dt / self.max_integration_dt))
         substep_dt = dt / substeps
         for _ in range(substeps):
-            self._step_once(target_velocity, substep_dt)
+            self._step_once(target_velocity, yaw_target_velocity, substep_dt)
         return self.angles
 
 

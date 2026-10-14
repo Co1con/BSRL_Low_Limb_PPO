@@ -67,7 +67,7 @@ def _step_low_limb_halo(env: ManagerBasedRLEnv, command_name: str) -> None:
         return
 
     command = env.command_manager.get_command(command_name)
-    halo_angles = halo.step(command[:, 0], env.step_dt)
+    halo_angles = halo.step(command[:, 0], command[:, 2], env.step_dt)
 
     env.low_limb_halo_reference_buf.copy_(_halo_angles_to_robot_order(halo_angles))
     env.low_limb_halo_state_buf.copy_(halo.state)

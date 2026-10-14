@@ -116,10 +116,10 @@ class G1HALOCommandsCfg:
         heading_command=False,
         debug_vis=True,
         ranges=mdp.UniformLevelVelocityCommandCfg.Ranges(
-            lin_vel_x=(-0.1, 0.1), lin_vel_y=(0.0, 0.0), ang_vel_z=(0.0, 0.0)
+            lin_vel_x=(-0.1, 0.1), lin_vel_y=(0.0, 0.0), ang_vel_z=(-0.3, 0.3)
         ),
         limit_ranges=mdp.UniformLevelVelocityCommandCfg.Ranges(
-            lin_vel_x=(-1.5, 1.5), lin_vel_y=(0.0, 0.0), ang_vel_z=(0.0, 0.0)
+            lin_vel_x=(-1.5, 1.5), lin_vel_y=(0.0, 0.0), ang_vel_z=(-0.5, 0.5)
         ),
     )
 
@@ -320,7 +320,7 @@ class G1HALOEventsCfg:
 @configclass
 class G1HALOCurriculumCfg:
     lin_vel_cmd_levels = CurrTerm(mdp.lin_vel_cmd_levels)
-    # ang_vel_cmd_levels = CurrTerm(mdp.ang_vel_cmd_levels)
+    ang_vel_cmd_levels = CurrTerm(mdp.ang_vel_cmd_levels)
 
 
 @configclass
@@ -366,7 +366,7 @@ class G1HALOPlayEnvCfg(G1HALOEnvCfg):
         super().__post_init__()
         self.scene.num_envs = 1
         self.commands.base_velocity.ranges = mdp.UniformLevelVelocityCommandCfg.Ranges(
-            lin_vel_x=(-1.0, 1.5), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.0, 0.0)
+            lin_vel_x=(-1.5, 1.5), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.5, 0.5)
         )
 
         if self.scene.terrain.terrain_generator is not None:
