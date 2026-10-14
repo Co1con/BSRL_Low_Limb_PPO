@@ -144,9 +144,10 @@ class G1HALORewardsCfg:
     )
     track_ang_vel_z = RewTerm(
         func=mdp.track_ang_vel_z_exp, 
-        weight=0.5,
+        weight=1.0,
         params={
-            "command_name": "base_velocity", "std": math.sqrt(0.25)
+            "command_name": "base_velocity",
+            "std": math.sqrt(0.25)
         },
     )
     alive = RewTerm(func=mdp.is_alive, weight=0.15)
@@ -249,8 +250,8 @@ class G1HALORewardsCfg:
         weight=0.3,
         params={
             "asset_cfg": SceneEntityCfg("robot"),
-            "direction_smoothing": 0.02,
-            "shoulder_velocity_scale": 0.3,
+            "direction_smoothing": 0.1,
+            "shoulder_velocity_scale": 0.1,
         },
     )
 
