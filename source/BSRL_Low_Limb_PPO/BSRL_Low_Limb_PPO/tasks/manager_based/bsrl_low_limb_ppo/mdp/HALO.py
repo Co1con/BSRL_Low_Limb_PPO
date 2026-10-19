@@ -295,7 +295,7 @@ class HALO:
         self.zero_hold_time = 0.06
         self.start_transition_time = 0.3
         self.stop_transition_time = 0.3
-        self.yaw_amplitude_gain = 0.6
+        self.yaw_amplitude_gain = 1.4
         self.amplitude_min = 0.7
         self.amplitude_max = 1.3
         self.amplitude_transition_time = 0.1
@@ -398,7 +398,7 @@ class HALO:
     ) -> None:
         target_scale = (
             self.yaw_amplitude_gain * yaw_target_velocity * torch.sign(target_velocity)
-        ).clamp(-0.3, 0.3)
+        ).clamp(-0.8, 0.8)
         response = 1.0 - math.exp(-dt / self.amplitude_transition_time)
         self.yaw_scale.add_(response * (target_scale - self.yaw_scale))
         left = (1.0 - self.yaw_scale).clamp(self.amplitude_min, self.amplitude_max)
