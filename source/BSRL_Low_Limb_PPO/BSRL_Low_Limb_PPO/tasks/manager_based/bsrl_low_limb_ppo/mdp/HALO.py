@@ -296,8 +296,8 @@ class HALO:
         self.start_transition_time = 0.3
         self.stop_transition_time = 0.3
         self.yaw_amplitude_gain = 1.4
-        self.amplitude_min = 0.7
-        self.amplitude_max = 1.3
+        self.amplitude_min = 0.3
+        self.amplitude_max = 1.7
         self.amplitude_transition_time = 0.1
 
         self._velocity = torch.zeros(num_envs, device=self.device, dtype=dtype)
