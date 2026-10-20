@@ -177,7 +177,7 @@ class G1HALORewardsCfg:
     )
     joint_deviation_waists = RewTerm(
         func=mdp.joint_deviation_l1,
-        weight=-1.0,
+        weight=-0.5,
         params={
             "asset_cfg": SceneEntityCfg(
                 "robot",
